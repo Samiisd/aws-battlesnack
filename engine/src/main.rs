@@ -3,16 +3,12 @@ mod engine;
 
 extern crate ndarray;
 
-use engine::{
-    point::Point,
-    snake::Snake,
-    board::Board,
-};
+use engine::{board::Board, point::Point, snake::Snake};
 
 use crate::engine::Movement;
 
 fn main() {
-    let snake = &Snake::new(Point {y: 2, x: 3});
+    let snake = &Snake::new(Point { y: 2, x: 3 });
     dbg!(snake);
 
     let board = &mut Board::new(10, 12, vec![snake.clone()]);

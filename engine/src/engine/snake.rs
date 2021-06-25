@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 
 use serde::Deserialize;
 
-use super::{Movement, point::Point};
+use super::{point::Point, Movement};
 
 const DEFAULT_SNAKE_HEALTH: i32 = 100;
 
@@ -47,12 +47,12 @@ impl Snake {
         self.health -= 1;
     }
 
-	pub fn kill(&mut self) {
+    pub fn kill(&mut self) {
         debug_assert!(!self.is_dead());
 
         self.body.clear();
-		self.length = 0;
-	}
+        self.length = 0;
+    }
 
     #[inline]
     pub fn feed(&mut self) {

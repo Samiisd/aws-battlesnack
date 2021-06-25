@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use serde::Deserialize;
 
-use super::{Movement, collision::Collision, point::Point, snake::Snake};
+use super::{collision::Collision, point::Point, snake::Snake, Movement};
 
 #[derive(Deserialize, PartialEq, Eq, Debug)]
 pub struct Board {
@@ -31,7 +31,7 @@ impl Board {
             .for_each(|(i, s)| s.apply_move(movs[i]));
 
         // Compute all collisions
-        let collisions : Vec<Collision> = (0..self.snakes.len())
+        let collisions: Vec<Collision> = (0..self.snakes.len())
             .filter(|&i| !self.snakes[i].is_dead())
             .map(|i| self.check_collision(i))
             .collect();
@@ -44,11 +44,10 @@ impl Board {
             .for_each(|(i, _)| self.snakes[i].kill());
 
         // Feed snakes
-        let snake_heads : HashSet<Point> = self.alive_snakes()
-            .map(|(_, s)| *s.head())
-            .collect();
+        let snake_heads: HashSet<Point> = self.alive_snakes().map(|(_, s)| *s.head()).collect();
 
-        let food_available : HashSet<Point> = self.food
+        let food_available: HashSet<Point> = self
+            .food
             .drain_filter(|f| snake_heads.contains(f))
             .collect();
 
