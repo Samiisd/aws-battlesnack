@@ -2,7 +2,9 @@ use std::collections::HashSet;
 
 use serde::Deserialize;
 
-use super::{collision::Collision, point::Point, snake::Snake, Movement};
+use crate::Movement;
+
+use super::{Collision, Point, Snake};
 
 #[derive(Deserialize, PartialEq, Eq, Debug)]
 pub struct Board {

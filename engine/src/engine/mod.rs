@@ -1,10 +1,15 @@
 use serde::{Deserialize, Serialize};
 
-pub mod board;
-pub mod collision;
-pub mod point;
-pub mod reward;
-pub mod snake;
+mod board;
+mod collision;
+mod point;
+mod reward;
+mod snake;
+
+pub use board::Board;
+pub use collision::Collision;
+pub use point::Point;
+pub use snake::Snake;
 
 #[derive(Deserialize, Serialize, Clone, PartialEq, Eq, Debug, Copy)]
 #[serde(rename_all(serialize = "lowercase", deserialize = "lowercase"))]

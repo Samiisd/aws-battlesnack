@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 
 use serde::Deserialize;
 
-use super::{point::Point, Movement};
+use super::{Point, Movement};
 
 const DEFAULT_SNAKE_HEALTH: i32 = 100;
 

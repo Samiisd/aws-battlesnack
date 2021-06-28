@@ -3,27 +3,15 @@ mod engine;
 
 extern crate ndarray;
 
-use std::string;
-
-use engine::{board::Board, point::Point, snake::Snake, Movement};
+use crate::engine::{Board, Point, Snake, Movement};
 use ruscii::{
     app::{App, State},
-    drawing::{Pencil, RectCharset},
+    drawing::{Pencil},
     gui::FPSCounter,
     keyboard::{Key, KeyEvent},
     spatial::Vec2,
-    terminal::{Color, Style, Window},
+    terminal::{Color, Window},
 };
-
-// fn main() {
-
-//     dbg!(&board);
-
-//     while board.alive_snakes().count() != 0 {
-//         board.step(vec![Movement::Right]);
-//         dbg!(&board);
-//     }
-// }
 
 #[inline]
 fn point_to_vec2(p: Point) -> Vec2 {
@@ -37,8 +25,6 @@ fn main() {
 
     let snake = &Snake::new(Point { y: 2, x: 3 });
     let board = &mut Board::new(10, 12, vec![snake.clone()]);
-
-    let mut mov = Movement::Up;
 
     app.run(|app_state: &mut State, window: &mut Window| {
         for key_event in app_state.keyboard().last_key_events() {
@@ -55,17 +41,19 @@ fn main() {
 
         let mut pencil = Pencil::new(window.canvas_mut());
         pencil.draw_text(&format!("{:?}", app_state.keyboard().last_key_events()), Vec2::xy(20, 20));
-        mov = match app_state.keyboard().get_keys_down().first() {
-            Some(Key::Up) | Some(Key::W) => Movement::Up,
-            Some(Key::Down) | Some(Key::S) => Movement::Down,
-            Some(Key::Left) | Some(Key::A) => Movement::Left,
-            Some(Key::Right) | Some(Key::D) => Movement::Right,
-            _ => mov,
-        };
-        pencil.draw_text(&format!("FPS: {}", fps_counter.count()), Vec2::xy(0, 0));
-        pencil.draw_text(&format!("{:?}", mov), Vec2::xy(20, 15));
+        if let Some(mov) = match app_state.keyboard().get_keys_down().first() {
+            Some(Key::Up) | Some(Key::W) => Some(Movement::Down),
+            Some(Key::Down) | Some(Key::S) => Some(Movement::Up),
+            Some(Key::Left) | Some(Key::A) => Some(Movement::Left),
+            Some(Key::Right) | Some(Key::D) => Some(Movement::Right),
+            _ => None,
+        } {
+            pencil.draw_text(&format!("{:?}", mov), Vec2::xy(20, 15));
+            board.step(vec![mov]);
+        }
 
-        board.step(vec![mov]);
+        pencil.draw_text(&format!("FPS: {}", fps_counter.count()), Vec2::xy(0, 0));
+
 
         board.alive_snakes().for_each(|(_, s)| {
             pencil.set_foreground(Color::Cyan);
@@ -78,7 +66,5 @@ fn main() {
 
         pencil.set_origin(win_size / 2.);
         fps_counter.update();
-
-        std::thread::sleep(std::time::Duration::from_millis(700));
     });
 }
