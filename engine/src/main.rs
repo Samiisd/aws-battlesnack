@@ -1,70 +1,108 @@
 #![feature(hash_drain_filter)]
+#![feature(deque_range)]
 mod engine;
 
 extern crate ndarray;
 
-use crate::engine::{Board, Point, Snake, Movement};
-use ruscii::{
-    app::{App, State},
-    drawing::{Pencil},
-    gui::FPSCounter,
-    keyboard::{Key, KeyEvent},
-    spatial::Vec2,
-    terminal::{Color, Window},
-};
+use crate::engine::{Board, Movement, MyEvaluator, MyMCTS, Point, Snake, SnakeGame};
+use mcts::transposition_table::ApproxTable;
+use mcts::tree_policy::UCTPolicy;
+use mcts::MCTSManager;
 
-#[inline]
-fn point_to_vec2(p: Point) -> Vec2 {
-    Vec2::xy(p.x, p.y)
+fn create_board() -> Board {
+    let snakes = [
+        Point { x: 0, y: 1 },
+        Point { x: 2, y: 3 },
+        Point { x: 3, y: 1 },
+        Point { x: 3, y: 2 },
+        Point { x: 3, y: 3 },
+        // Point { x: 6, y: 2 },
+        // Point { x: 7, y: 2 },
+        // Point { x: 8, y: 1 },
+        // Point { x: 8, y: 3 },
+        // Point { x: 8, y: 4 },
+    ]
+    .iter()
+    .map(|&p| Snake::new(p))
+    .collect();
+
+    Board::new(4, 4, snakes)
 }
 
-fn main() {
-    let mut fps_counter = FPSCounter::new();
-    let mut app = App::new();
-    let win_size = app.window().size();
+fn benchmark_n_snakes(snakes: Vec<Snake>) {
+    let n_snakes = snakes.len();
 
-    let snake = &Snake::new(Point { y: 2, x: 3 });
-    let board = &mut Board::new(10, 12, vec![snake.clone()]);
-
-    app.run(|app_state: &mut State, window: &mut Window| {
-        for key_event in app_state.keyboard().last_key_events() {
-            match key_event {
-                KeyEvent::Pressed(Key::Esc) => app_state.stop(),
-                KeyEvent::Pressed(Key::Q) => app_state.stop(),
-                _ => (),
-            }
+    let mut board = Board::new(21, 21, snakes.clone());
+    for _ in 0..100 {
+        if board.alive_snakes().count() > 0 {
+            board.step((0..n_snakes).into_iter().map(|_| rand::random()).collect());
         }
+    }
+}
 
-        if board.alive_snakes().count() == 0 {
-            app_state.stop();
-        }
+pub fn benchmark_engine_10_snakes() {
+    let snakes = [
+        Point { x: 2, y: 4 },
+        Point { x: 5, y: 1 },
+        Point { x: 17, y: 12 },
+        Point { x: 16, y: 12 },
+        Point { x: 15, y: 12 },
+        Point { x: 15, y: 11 },
+        Point { x: 15, y: 10 },
+        Point { x: 10, y: 19 },
+        Point { x: 9, y: 19 },
+        Point { x: 0, y: 19 },
+    ]
+    .iter()
+    .map(|&p| Snake::new(p))
+    .collect();
 
-        let mut pencil = Pencil::new(window.canvas_mut());
-        pencil.draw_text(&format!("{:?}", app_state.keyboard().last_key_events()), Vec2::xy(20, 20));
-        if let Some(mov) = match app_state.keyboard().get_keys_down().first() {
-            Some(Key::Up) | Some(Key::W) => Some(Movement::Down),
-            Some(Key::Down) | Some(Key::S) => Some(Movement::Up),
-            Some(Key::Left) | Some(Key::A) => Some(Movement::Left),
-            Some(Key::Right) | Some(Key::D) => Some(Movement::Right),
-            _ => None,
-        } {
-            pencil.draw_text(&format!("{:?}", mov), Vec2::xy(20, 15));
-            board.step(vec![mov]);
-        }
+    benchmark_n_snakes(snakes);
+}
 
-        pencil.draw_text(&format!("FPS: {}", fps_counter.count()), Vec2::xy(0, 0));
+pub fn benchmark_engine_4_snakes() {
+    let snakes = [
+        Point { x: 2, y: 4 },
+        Point { x: 5, y: 1 },
+        Point { x: 17, y: 12 },
+        Point { x: 10, y: 19 },
+    ]
+    .iter()
+    .map(|&p| Snake::new(p))
+    .collect();
 
+    benchmark_n_snakes(snakes);
+}
 
-        board.alive_snakes().for_each(|(_, s)| {
-            pencil.set_foreground(Color::Cyan);
-            pencil.draw_text(&format!("{:?}", s.head()), Vec2::xy(20, 10));
-            pencil.draw_char('@', point_to_vec2(*s.head()));
-            s.body().iter().for_each(|&p| {
-                pencil.draw_char('#', point_to_vec2(p));
-            })
-        });
+pub fn main() {
+    // benchmark_engine_10_snakes();
+    let game = SnakeGame::new(create_board());
+    dbg!(game.available_moves_snake(0));
 
-        pencil.set_origin(win_size / 2.);
-        fps_counter.update();
-    });
+    // for _ in 0..100 {
+    //     if game.board().alive_snakes().count() > 0 {
+    //         board.step((0..board.snakes).into_iter().map(|_| rand::random()).collect());
+    //     }
+    // }
+    dbg!(game.board().matrice().array());
+
+    let mut mcts = MCTSManager::new(
+        game,
+        MyMCTS,
+        MyEvaluator,
+        UCTPolicy::new(5.0),
+        // (),
+        ApproxTable::new(1024),
+    );
+
+    mcts.playout_n(1_000_000);
+    // mcts.playout_n_parallel(1_000_000, 12);
+    dbg!(mcts.best_move());
+    // let pv: Vec<_> = mcts
+    //     .principal_variation_states(10)
+    //     .into_iter()
+    //     .collect();
+    // println!("Principal variation: {:?}", pv);
+    println!("Evaluation of moves:");
+    mcts.tree().debug_moves();
 }

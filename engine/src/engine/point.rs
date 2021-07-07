@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-use super::Movement;
+use crate::engine::Movement;
 
 #[derive(Deserialize, PartialEq, Eq, Debug, Copy, Clone, Hash)]
 pub struct Point {

@@ -1,3 +1,4 @@
+#[derive(Hash, Clone, Eq, PartialEq, Debug)]
 pub enum Collision {
     None,
     Wall,

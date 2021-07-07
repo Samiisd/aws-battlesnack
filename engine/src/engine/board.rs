@@ -1,23 +1,38 @@
+use crate::engine::matrice::Matrice;
 use std::collections::HashSet;
+use std::hash::Hash;
 
-use serde::Deserialize;
+use crate::engine::Movement;
 
-use crate::Movement;
+use super::{matrice::Displacement, Collision};
+use crate::{Point, Snake};
+use itertools::Itertools;
 
-use super::{Collision, Point, Snake};
+pub type SnakeId = u8;
 
-#[derive(Deserialize, PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub struct Board {
     height: i32,
     width: i32,
     food: HashSet<Point>,
     snakes: Vec<Snake>,
+    matrice: Matrice,
+}
+
+impl Hash for Board {
+    fn hash<H>(&self, state: &mut H)
+    where
+        H: std::hash::Hasher,
+    {
+        self.matrice.hash(state);
+    }
 }
 
 // Game
 impl Board {
     pub fn new(width: i32, height: i32, snakes: Vec<Snake>) -> Self {
         Self {
+            matrice: Matrice::new(&snakes, height as usize, width as usize),
             height,
             width,
             snakes,
@@ -26,46 +41,43 @@ impl Board {
     }
 
     pub fn step(&mut self, movs: Vec<Movement>) {
+        // dbg!(self.alive_snakes().map(|(_,s)| s.health()).collect_vec(), &movs);
+        // dbg!(self.nb_snakes_alive(), &movs);
+
         debug_assert_eq!(self.snakes.len(), movs.len());
+        // dbg!(self.alive_snakes().count());
+        // dbg!(&movs);
+        // dbg!(self.alive_snakes().map(|(_, s)| *s.head()).collect_vec());
 
         // Move all alive snakes
-        self.alive_snakes_mut()
-            .for_each(|(i, s)| s.apply_move(movs[i]));
+        let displacements = self.update_snakes_positions(movs);
 
-        // Compute all collisions
-        let collisions: Vec<Collision> = (0..self.snakes.len())
-            .filter(|&i| !self.snakes[i].is_dead())
-            .map(|i| self.check_collision(i))
-            .collect();
-
-        // kill snakes that got killing collision
-        collisions
-            .iter()
-            .enumerate()
-            .filter(|(_, c)| c.causes_death())
-            .for_each(|(i, _)| self.snakes[i].kill());
+        // Kill collided snakes
+        self.kill_collided_snakes();
 
         // Feed snakes
-        let snake_heads: HashSet<Point> = self.alive_snakes().map(|(_, s)| *s.head()).collect();
-
-        let food_available: HashSet<Point> = self
-            .food
-            .drain_filter(|f| snake_heads.contains(f))
-            .collect();
-
-        self.alive_snakes_mut()
-            .filter(|(_, s)| food_available.contains(s.head()))
-            .for_each(|(_, s)| s.feed());
+        self.feed_snakes();
 
         // kill hungry snakes
-        self.alive_snakes_mut()
-            .filter(|(_, s)| s.health() == 0)
-            .for_each(|(_, s)| s.kill());
+        self.kill_hungry_snakes();
+
+        // update matrice
+        self.update_matrice(displacements.clone()); // FIXME: remove clone
+
+        // dbg!(&displacements, self.matrice.array());
     }
 }
 
 // Helpers
 impl Board {
+    pub fn matrice(&self) -> &Matrice {
+        &self.matrice
+    }
+
+    pub fn snakes(&self) -> &Vec<Snake> {
+        &self.snakes
+    }
+
     pub fn alive_snakes(&self) -> impl Iterator<Item = (usize, &Snake)> {
         self.snakes.iter().enumerate().filter(|(_, s)| !s.is_dead())
     }
@@ -76,10 +88,89 @@ impl Board {
             .enumerate()
             .filter(|(_, s)| !s.is_dead())
     }
+
+    pub fn update_matrice(&mut self, displacements: Vec<Displacement>) {
+        self.matrice.update(
+            displacements
+                .into_iter()
+                .filter(|(id, ..)| !self.snakes[*id as usize].is_dead())
+                .collect(),
+        );
+    }
+
+    #[inline]
+    pub fn nb_snakes(&self) -> usize {
+        self.snakes.len()
+    }
+
+    #[inline]
+    pub fn nb_snakes_alive(&self) -> usize {
+        self.alive_snakes().count()
+    }
+
+    #[inline]
+    pub fn is_outside(&self, p: Point) -> bool {
+        p.x < 0 || p.x >= self.width || p.y < 0 || p.y >= self.height
+    }
+}
+
+// engine logic
+impl Board {
+    fn update_snakes_positions(&mut self, movs: Vec<Movement>) -> Vec<Displacement> {
+        self.alive_snakes_mut()
+            .map(|(i, s)| (i as SnakeId, s.apply_move(movs[i])))
+            .collect()
+    }
+
+    fn kill_hungry_snakes(&mut self) {
+        let hungry_snakes: Vec<usize> = self
+            .alive_snakes()
+            .filter(|(_, s)| s.health() == 0)
+            .map(|(i, _)| i)
+            .collect();
+
+        self.kill_snakes(hungry_snakes.into_iter());
+    }
+
+    fn feed_snakes(&mut self) {
+        let snake_heads: HashSet<Point> = self.alive_snakes().map(|(_, s)| *s.head()).collect();
+
+        let food_available: HashSet<Point> = self
+            .food
+            .drain_filter(|f| snake_heads.contains(f))
+            .collect();
+
+        self.alive_snakes_mut()
+            .filter(|(_, s)| food_available.contains(s.head()))
+            .for_each(|(_, s)| s.feed());
+    }
+
+    fn kill_collided_snakes(&mut self) {
+        // Compute all collisions
+        let collisions: Vec<(usize, Collision)> = self.alive_snakes()
+            .map(|(i,_)| (i, self.check_collision(i)))
+            .filter(|(_, c)| c.causes_death())
+            .collect();
+
+        // if collisions.len() > 0 {
+        //     dbg!(&collisions);
+        // }
+
+        // kill snakes that got killing collision
+        self.kill_snakes( collisions.iter().map(|(id,_)| *id));
+    }
 }
 
 // collisions
 impl Board {
+    pub fn kill_snakes(&mut self, iter_dead_snakes: impl Iterator<Item = usize>) {
+        iter_dead_snakes.for_each(|i| {
+            let s = &mut self.snakes[i];
+            self.matrice.remove_points(s.body().iter());
+            s.kill();
+        });
+    }
+
     pub fn check_collision(&self, snake_id: usize) -> Collision {
         debug_assert!(!self.snakes[snake_id].is_dead());
 
@@ -100,25 +191,21 @@ impl Board {
     #[inline]
     fn collides_wall(&self, snake_id: usize) -> bool {
         let p = self.snakes[snake_id].head();
-        p.x < 0 || p.x >= self.width || p.y < 0 || p.y >= self.height
+        self.is_outside(*p)
     }
 
     fn collides_self_body(&self, snake_id: usize) -> bool {
-        // FIXME: this can be optimized using Collision Map
         let snake = &self.snakes[snake_id];
-        snake.body().contains(snake.head())
+        snake.body_without_head().any(|p| p == snake.head())
     }
 
     fn collides_other_body(&self, snake_id: usize) -> bool {
-        // FIXME: this can be optimized using Collision Map
         let snake = &self.snakes[snake_id];
-        self.snakes
-            .iter()
-            .any(|other| other.body().contains(snake.head()))
+        self.alive_snakes()
+            .any(|(_, other)| other.body_without_head().any(|p| p == snake.head()))
     }
 
     fn collides_head_to_head(&self, snake_id: usize) -> Option<Collision> {
-        // FIXME: this can be optimized using Collision Map
         let snake = &self.snakes[snake_id];
         self.alive_snakes()
             .filter(|&(i, other)| i != snake_id && other.head() == snake.head())

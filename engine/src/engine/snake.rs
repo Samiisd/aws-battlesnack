@@ -1,8 +1,8 @@
-use std::collections::VecDeque;
+use std::{collections::VecDeque, iter::FromIterator};
 
 use serde::Deserialize;
 
-use super::{Point, Movement};
+use super::{Movement, Point};
 
 const DEFAULT_SNAKE_HEALTH: i32 = 100;
 
@@ -18,27 +18,31 @@ impl Snake {
     pub fn new(head: Point) -> Self {
         Snake {
             health: DEFAULT_SNAKE_HEALTH,
-            body: VecDeque::new(),
+            body: VecDeque::from_iter(vec![head]),
             length: 3,
             head,
         }
     }
 
-    pub fn apply_move(&mut self, mov: Movement) {
+    pub fn apply_move(&mut self, mov: Movement) -> (Option<Point>, Point) {
         debug_assert!(!self.is_dead());
 
         // Last body part (their tail) is removed from the board
-        debug_assert!((self.body.len() + 1) <= self.length);
-        self.body.push_back(self.head);
-        if (self.body.len() + 1) > self.length {
-            self.body.pop_front();
-        }
+        // debug_assert!(self.body.len() <= self.length);
+        let tail = if self.body.len() >= self.length {
+            self.body.pop_front()
+        } else {
+            None
+        };
 
         // A new body part is added to the board in the direction they moved.
         self.head = self.head.apply_mov(mov);
+        self.body.push_back(self.head);
 
         // moves cost one life point
         self.consume_health();
+
+        (tail, self.head)
     }
 
     pub fn consume_health(&mut self) {
@@ -89,5 +93,10 @@ impl Snake {
     #[inline]
     pub fn body(&self) -> &VecDeque<Point> {
         &self.body
+    }
+
+    pub fn body_without_head(&self) -> impl Iterator<Item = &Point> {
+        debug_assert!(!self.is_dead(), "dead snakes don't have a body");
+        self.body().range(..(self.body.len() - 1))
     }
 }

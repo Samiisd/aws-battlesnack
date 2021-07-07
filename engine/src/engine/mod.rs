@@ -2,16 +2,24 @@ use serde::{Deserialize, Serialize};
 
 mod board;
 mod collision;
+mod game;
+mod matrice;
+mod mcts;
 mod point;
 mod reward;
 mod snake;
 
+pub use self::mcts::{MyEvaluator, MyMCTS};
 pub use board::Board;
 pub use collision::Collision;
+pub use game::SnakeGame;
 pub use point::Point;
 pub use snake::Snake;
 
-use rand::{Rng, distributions::{Distribution, Standard}};
+use rand::{
+    distributions::{Distribution, Standard},
+    Rng,
+};
 
 #[derive(Deserialize, Serialize, Clone, PartialEq, Eq, Debug, Copy)]
 #[serde(rename_all(serialize = "lowercase", deserialize = "lowercase"))]
