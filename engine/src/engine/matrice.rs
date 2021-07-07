@@ -1,5 +1,4 @@
-use crate::engine::board::SnakeId;
-use crate::{Point, Snake};
+use crate::engine::{board::SnakeId, Point, Snake};
 use ndarray::Array2;
 
 pub(crate) type CellValue = u8;

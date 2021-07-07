@@ -4,9 +4,7 @@ use std::hash::Hash;
 
 use crate::engine::Movement;
 
-use super::{matrice::Displacement, Collision};
-use crate::{Point, Snake};
-use itertools::Itertools;
+use super::{matrice::Displacement, Collision, Point, Snake};
 
 pub type SnakeId = u8;
 
@@ -41,13 +39,7 @@ impl Board {
     }
 
     pub fn step(&mut self, movs: Vec<Movement>) {
-        // dbg!(self.alive_snakes().map(|(_,s)| s.health()).collect_vec(), &movs);
-        // dbg!(self.nb_snakes_alive(), &movs);
-
         debug_assert_eq!(self.snakes.len(), movs.len());
-        // dbg!(self.alive_snakes().count());
-        // dbg!(&movs);
-        // dbg!(self.alive_snakes().map(|(_, s)| *s.head()).collect_vec());
 
         // Move all alive snakes
         let displacements = self.update_snakes_positions(movs);
@@ -63,8 +55,6 @@ impl Board {
 
         // update matrice
         self.update_matrice(displacements.clone()); // FIXME: remove clone
-
-        // dbg!(&displacements, self.matrice.array());
     }
 }
 
@@ -99,13 +89,18 @@ impl Board {
     }
 
     #[inline]
-    pub fn nb_snakes(&self) -> usize {
-        self.snakes.len()
+    pub fn nb_snakes_alive(&self) -> usize {
+        self.alive_snakes().count()
     }
 
     #[inline]
-    pub fn nb_snakes_alive(&self) -> usize {
-        self.alive_snakes().count()
+    pub fn width(&self) -> i32 {
+        self.width
+    }
+
+    #[inline]
+    pub fn height(&self) -> i32 {
+        self.height
     }
 
     #[inline]
@@ -147,17 +142,14 @@ impl Board {
 
     fn kill_collided_snakes(&mut self) {
         // Compute all collisions
-        let collisions: Vec<(usize, Collision)> = self.alive_snakes()
-            .map(|(i,_)| (i, self.check_collision(i)))
+        let collisions: Vec<(usize, Collision)> = self
+            .alive_snakes()
+            .map(|(i, _)| (i, self.check_collision(i)))
             .filter(|(_, c)| c.causes_death())
             .collect();
 
-        // if collisions.len() > 0 {
-        //     dbg!(&collisions);
-        // }
-
         // kill snakes that got killing collision
-        self.kill_snakes( collisions.iter().map(|(id,_)| *id));
+        self.kill_snakes(collisions.iter().map(|(id, _)| *id));
     }
 }
 

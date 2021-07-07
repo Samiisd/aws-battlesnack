@@ -23,13 +23,6 @@ impl SnakeGame {
         }
     }
 
-    pub fn available_moves_all(&self) -> Vec<Vec<Movement>> {
-        (0..self.board().snakes().len())
-            .map(|id| self.available_moves_snake(id))
-            .multi_cartesian_product()
-            .collect()
-    }
-
     pub fn available_moves_snake(&self, id: usize) -> Vec<Movement> {
         let s = &self.board.snakes()[id];
         let head = s.head();
@@ -55,7 +48,11 @@ impl SnakeGame {
             .collect()
         };
 
-        if available_moves.is_empty() { vec![Movement::Up] } else { available_moves }
+        if available_moves.is_empty() {
+            vec![Movement::Up]
+        } else {
+            available_moves
+        }
     }
 
     pub fn board(&self) -> &Board {

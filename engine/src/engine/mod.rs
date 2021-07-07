@@ -30,6 +30,17 @@ pub enum Movement {
     Down,
 }
 
+impl Movement {
+    pub fn is_opposite(&self, o: Movement) -> bool {
+        match self {
+            Movement::Right => o == Movement::Left,
+            Movement::Left => o == Movement::Right,
+            Movement::Up => o == Movement::Down,
+            Movement::Down => o == Movement::Up,
+        }
+    }
+}
+
 impl Distribution<Movement> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Movement {
         match rng.gen_range(0..4) {

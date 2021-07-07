@@ -1,6 +1,5 @@
 use super::matrice::CellValue;
-use crate::SnakeGame;
-use crate::{Movement, Snake};
+use super::{Movement, Snake, SnakeGame};
 use mcts::{transposition_table::ApproxTable, tree_policy::UCTPolicy, Evaluator, MCTS};
 use ndarray::{Array1, Array2};
 use std::{collections::VecDeque, iter::FromIterator};
@@ -59,7 +58,10 @@ impl Evaluator<MyMCTS> for MyEvaluator {
         let array = state.board().matrice().array().clone();
 
         let p_area = Self::expand_conquer_array(array, snakes);
-        let p_death : Self::StateEvaluation = snakes.iter().map(|s| if s.is_dead() {-100} else {0}).collect();
+        let p_death: Self::StateEvaluation = snakes
+            .iter()
+            .map(|s| if s.is_dead() { -100 } else { 0 })
+            .collect();
 
         let p_total = p_area + p_death;
 
