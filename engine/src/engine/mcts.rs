@@ -10,7 +10,9 @@ pub struct MyEvaluator;
 impl MyEvaluator {
     fn expand_conquer_array(mut array: Array2<CellValue>, snakes: &Vec<Snake>) -> Array1<i64> {
         let (height, width) = (array.shape()[0] as i32, array.shape()[1] as i32);
-        let mut lengths: Array1<i64> = snakes.iter().map(|s| s.body().len() as i64).collect();
+        // let mut lengths: Array1<i64> = snakes.iter().map(|s| s.body().len() as i64).collect();
+        // let mut lengths: Array1<i64> = snakes.iter().map(|s| s.body().len() as i64).collect();
+        let mut lengths: Array1<i64> = Array1::zeros([snakes.len()]);
 
         let mut q = VecDeque::from_iter(snakes.iter().enumerate().map(|(id, s)| (id, *s.head())));
 
@@ -60,10 +62,15 @@ impl Evaluator<MyMCTS> for MyEvaluator {
         let p_area = Self::expand_conquer_array(array, snakes);
         let p_death: Self::StateEvaluation = snakes
             .iter()
-            .map(|s| if s.is_dead() { -100 } else { 0 })
+            .map(|s| if s.is_dead() { -1000 } else { 0 })
             .collect();
 
-        let p_total = p_area + p_death;
+        let mut p_total = p_area + p_death;
+        let a : i64 = (1..snakes.len())
+            .map(|i| (-0.5 * p_total[i] as f64) as i64)
+            .sum();
+
+        p_total[0] += a;
 
         (vec![(); moves.len()], p_total)
     }

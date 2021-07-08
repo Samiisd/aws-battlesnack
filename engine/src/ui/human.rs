@@ -1,3 +1,4 @@
+use crate::SnakeGame;
 use crate::engine::Movement;
 use piston_window::Button;
 use piston_window::Key;
@@ -19,7 +20,18 @@ impl Human {
         }
     }
 
-    pub fn register_key_event(&mut self, press_args: Button) {
+}
+
+impl Player for Human {
+    fn next_move(&mut self) -> Movement {
+        self.last_mov
+    }
+
+    fn get_color(&self) -> [f32; 4] {
+        self.color
+    }
+
+    fn register_key_event(&mut self, press_args: Button) {
         let mov = match press_args {
             Button::Keyboard(k) if k == self.keys[0] => Some(Movement::Left),
             Button::Keyboard(k) if k == self.keys[1] => Some(Movement::Up),
@@ -33,14 +45,6 @@ impl Human {
             self.last_mov = mov;
         }
     }
-}
 
-impl Player for Human {
-    fn next_move(&self) -> Movement {
-        self.last_mov
-    }
-
-    fn get_color(&self) -> [f32; 4] {
-        self.color
-    }
+    fn think(&mut self, _: &SnakeGame) { () }
 }

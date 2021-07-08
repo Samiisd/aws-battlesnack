@@ -19,7 +19,7 @@ impl Snake {
         Snake {
             health: DEFAULT_SNAKE_HEALTH,
             body: VecDeque::from_iter(vec![head]),
-            length: 3,
+            length: 25,
             head,
         }
     }
