@@ -2,7 +2,6 @@ use crate::engine::Movement;
 use std::collections::HashMap;
 
 use itertools::Itertools;
-use mcts::tree_policy::AlphaGoPolicy;
 use mcts::{AsyncSearchOwned, GameState};
 
 use mcts::{MCTSManager, transposition_table::ApproxTable, tree_policy::UCTPolicy};

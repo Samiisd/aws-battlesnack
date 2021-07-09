@@ -1,3 +1,7 @@
+use itertools::Itertools;
+use ndarray::Array2;
+use rand::prelude::SliceRandom;
+
 use crate::engine::matrice::Matrice;
 use std::collections::HashSet;
 use std::hash::Hash;
@@ -9,7 +13,7 @@ use super::{matrice::Displacement, Collision, Point, Snake};
 
 pub type SnakeId = u8;
 
-#[derive(PartialEq, Eq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct Board {
     height: i32,
     width: i32,
@@ -17,6 +21,8 @@ pub struct Board {
     snakes: Vec<Snake>,
     matrice: Matrice,
     collisions: Vec<Collision>,
+    food_spawn_chance: f32,
+    food_min_amount: usize,
 }
 
 impl Hash for Board {
@@ -32,16 +38,18 @@ impl Hash for Board {
 impl Board {
     pub fn new(width: i32, height: i32, snakes: Vec<Snake>) -> Self {
         Self {
+            food_min_amount: snakes.len()-1,
             matrice: Matrice::new(&snakes, height as usize, width as usize),
             height,
             width,
             snakes,
             collisions: vec![],
             food: HashSet::new(),
+            food_spawn_chance: 0.15,
         }
     }
 
-    pub fn step(&mut self, movs: Vec<Movement>) {
+    pub fn step(&mut self, movs: Vec<Movement>, is_simulation: bool) {
         debug_assert_eq!(self.snakes.len(), movs.len());
 
         // Move all alive snakes
@@ -55,6 +63,11 @@ impl Board {
 
         // kill hungry snakes
         self.kill_hungry_snakes();
+
+        // spawn food
+        if !is_simulation {
+            self.spawn_food();
+        }
 
         // update matrice
         self.update_matrice(displacements.clone()); // FIXME: remove clone
@@ -109,6 +122,11 @@ impl Board {
     #[inline]
     pub fn collisions(&self) -> &Vec<Collision> {
         &self.collisions
+    }
+
+    #[inline]
+    pub fn food(&self) -> &HashSet<Point> {
+        &self.food
     }
 
     #[inline]
@@ -167,6 +185,41 @@ impl Board {
 
         // kill snakes that got killing collision
         self.kill_snakes(snakes_to_kill);
+    }
+
+    fn spawn_food(&mut self) {
+        let nb_curr_food = self.food.len();
+        if self.food.len() < self.food_min_amount {
+            self.spawn_food_rnd(self.food_min_amount - nb_curr_food);
+        } else if rand::random::<f32>() < self.food_spawn_chance {
+            self.spawn_food_rnd(1);
+        }
+    }
+
+    fn spawn_food_rnd(&mut self, n: usize) {
+        let a : Vec<Point> = self.unoccupied_points()
+            .choose_multiple(&mut rand::thread_rng(), n)
+            .map(|&p| p)
+            .collect();
+        
+        dbg!(&a, n);
+
+        a.iter().for_each(|p| {
+                self.food.insert(*p);
+            });
+    }
+
+    fn unoccupied_points(&self) -> Vec<Point> {
+        let mut h_empty : Array2<bool> = Array2::from_elem([self.height as usize, self.width as usize], true);
+        let mut mark_not_empty = |p: &Point| h_empty[[p.y as usize, p.x as usize]] = false;
+
+        self.alive_snakes().for_each(|(_, s)| s.body().iter().for_each(&mut mark_not_empty));
+        self.food.iter().for_each(&mut mark_not_empty);
+
+        (0..self.height).cartesian_product(0..self.width)
+            .filter(|&(y, x)| h_empty[[y as usize, x as usize]])
+            .map(|(y,x)| Point {y, x})
+            .collect()
     }
 }
 

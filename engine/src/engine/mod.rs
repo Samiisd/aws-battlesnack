@@ -14,7 +14,7 @@ pub use board::Board;
 pub use collision::Collision;
 pub use game::SnakeGame;
 pub use point::Point;
-pub use snake::Snake;
+pub use snake::{Snake, DEFAULT_SNAKE_HEALTH};
 
 use rand::{
     distributions::{Distribution, Standard},

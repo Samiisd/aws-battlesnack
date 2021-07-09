@@ -4,7 +4,7 @@ use serde::Deserialize;
 
 use super::{Movement, Point};
 
-const DEFAULT_SNAKE_HEALTH: i32 = 100;
+pub const DEFAULT_SNAKE_HEALTH: i32 = 100;
 
 #[derive(Deserialize, PartialEq, Eq, Debug, Clone)]
 pub struct Snake {
@@ -19,7 +19,7 @@ impl Snake {
         Snake {
             health: DEFAULT_SNAKE_HEALTH,
             body: VecDeque::from_iter(vec![head]),
-            length: 25,
+            length: 3,
             head,
         }
     }

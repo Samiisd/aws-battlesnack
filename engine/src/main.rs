@@ -7,10 +7,12 @@ mod ui;
 
 extern crate piston_window;
 
+use crate::engine::DEFAULT_SNAKE_HEALTH;
 use crate::engine::{Board, SnakeGame, Point, Snake};
 use crate::ui::Player;
 use mcts::GameState;
 use piston_window::*;
+use piston_window::color::hex;
 
 const COLOR_WALL: [f32; 4] = [0.8, 0.8, 0.7, 1.];
 
@@ -50,10 +52,19 @@ fn render_walls(board: &Board, t: math::Matrix2d, gfx: &mut G2d) {
     line(COLOR_WALL, wall_size, [x(-1), y(h+1), x(board.width()+1), y(h+1)], t, gfx);
 }
 
+fn render_food(board: &Board, t: math::Matrix2d, gfx: &mut G2d) {
+    let food_size = 0.3 * TILE_SIZE;
+    board.food().iter().for_each(|p| { 
+        ellipse(hex("ff0c0c"), ellipse::circle(x(p.x as f64 + 0.5), y(p.y as f64 + 0.5), food_size), t, gfx); 
+    });
+}
+
 fn render_players(board: &Board, players: &Vec<Box<dyn Player>>, t: math::Matrix2d, gfx: &mut G2d) {
     board.alive_snakes().for_each(|(id, s)| {
         let head = s.head();
-        let color = players[id].get_color();
+        let mut color = players[id].get_color();
+        let f = s.health() as f32 / DEFAULT_SNAKE_HEALTH as f32;
+        color[3] = f;
 
         // draw body
         s.body_without_head().for_each(|p| {
@@ -77,7 +88,7 @@ fn render_players(board: &Board, players: &Vec<Box<dyn Player>>, t: math::Matrix
 
 fn main() {
     let mut players : Vec<Box<dyn Player>> = vec![
-        Box::new(ui::BotA::new(12, color::hex("eeff11"))),
+        Box::new(ui::BotA::new(5, color::hex("eeff11"))),
         // Box::new(ui::BotA::new(3, color::hex("00ff11"))),
         Box::new(ui::Human::new(color::hex("50E4EA"), [Key::Left, Key::Down, Key::Right, Key::Up])),
         Box::new(ui::Human::new(color::hex("57D658"), [Key::A, Key::S, Key::D, Key::W])),
@@ -121,6 +132,7 @@ fn main() {
         window.draw_2d(&event, |context, graphics, _device| {
             clear([0.0; 4], graphics);
             render_walls(game.board(), context.transform, graphics);
+            render_food(game.board(), context.transform, graphics);
             render_players(game.board(), &players, context.transform, graphics);
         });
 
@@ -128,7 +140,7 @@ fn main() {
             time += arg.dt;
 
             if time >= FREQ_SECONDS {
-                game.make_move(&players.iter_mut().map(|p| p.next_move()).collect());
+                game.step(players.iter_mut().map(|p| p.next_move()).collect());
 
                 players
                     .iter_mut()

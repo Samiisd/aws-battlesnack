@@ -17,7 +17,7 @@ pub struct SnakeGame {
 impl SnakeGame {
     pub fn new(board: Board) -> Self {
         SnakeGame {
-            current_player: 1,
+            current_player: 0,
             movement_queue: Vec::with_capacity(board.alive_snakes().count()),
             board,
         }
@@ -58,6 +58,10 @@ impl SnakeGame {
     pub fn board(&self) -> &Board {
         &self.board
     }
+
+    pub fn step(&mut self, mov: Vec<Movement>) {
+        self.board.step(mov, false);
+    }
 }
 
 impl TranspositionHash for SnakeGame {
@@ -87,6 +91,6 @@ impl GameState for SnakeGame {
     }
 
     fn make_move(&mut self, mov: &Self::Move) {
-        self.board.step(mov.clone());
+        self.board.step(mov.clone(), true);
     }
 }
