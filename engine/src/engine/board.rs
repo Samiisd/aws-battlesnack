@@ -1,6 +1,7 @@
 use crate::engine::matrice::Matrice;
 use std::collections::HashSet;
 use std::hash::Hash;
+use std::vec;
 
 use crate::engine::Movement;
 
@@ -15,6 +16,7 @@ pub struct Board {
     food: HashSet<Point>,
     snakes: Vec<Snake>,
     matrice: Matrice,
+    collisions: Vec<Collision>,
 }
 
 impl Hash for Board {
@@ -34,6 +36,7 @@ impl Board {
             height,
             width,
             snakes,
+            collisions: vec![],
             food: HashSet::new(),
         }
     }
@@ -104,6 +107,11 @@ impl Board {
     }
 
     #[inline]
+    pub fn collisions(&self) -> &Vec<Collision> {
+        &self.collisions
+    }
+
+    #[inline]
     pub fn is_outside(&self, p: Point) -> bool {
         p.x < 0 || p.x >= self.width || p.y < 0 || p.y >= self.height
     }
@@ -124,7 +132,7 @@ impl Board {
             .map(|(i, _)| i)
             .collect();
 
-        self.kill_snakes(hungry_snakes.into_iter());
+        self.kill_snakes(hungry_snakes);
     }
 
     fn feed_snakes(&mut self) {
@@ -142,68 +150,77 @@ impl Board {
 
     fn kill_collided_snakes(&mut self) {
         // Compute all collisions
-        let collisions: Vec<(usize, Collision)> = self
+        self.collisions = self
             .alive_snakes()
-            .map(|(i, _)| (i, self.check_collision(i)))
-            .filter(|(_, c)| c.causes_death())
+            .filter_map(|(i, _)| self.check_collision(i))
             .collect();
+        
+        let snakes_to_kill : Vec<usize> = self.collisions
+            .iter()
+            .filter(|&c| c.causes_death())
+            .filter_map(|c| match *c {
+                Collision::Wall { id } => Some(id),
+                Collision::SelfBody { id } => Some(id),
+                Collision::OtherBody { id_1, ..} => Some(id_1),
+                Collision::HeadToHead { id_1, ..} => Some(id_1),
+            }).collect();
 
         // kill snakes that got killing collision
-        self.kill_snakes(collisions.iter().map(|(id, _)| *id));
+        self.kill_snakes(snakes_to_kill);
     }
 }
 
 // collisions
 impl Board {
-    pub fn kill_snakes(&mut self, iter_dead_snakes: impl Iterator<Item = usize>) {
-        iter_dead_snakes.for_each(|i| {
+    pub fn kill_snakes(&mut self, snakes_dead: Vec<usize>) {
+        snakes_dead.into_iter().for_each(|i| {
             let s = &mut self.snakes[i];
             self.matrice.remove_points(s.body().iter());
             s.kill();
         });
     }
 
-    pub fn check_collision(&self, snake_id: usize) -> Collision {
+    pub fn check_collision(&self, snake_id: usize) -> Option<Collision> {
         debug_assert!(!self.snakes[snake_id].is_dead());
 
-        // check wall
-        if self.collides_wall(snake_id) {
-            Collision::Wall
-        } else if self.collides_other_body(snake_id) {
-            Collision::OtherBody
-        } else if self.collides_self_body(snake_id) {
-            Collision::SelfBody
-        } else if let Some(collision) = self.collides_head_to_head(snake_id) {
-            collision
-        } else {
-            Collision::None
-        }
+        self.collides_wall(snake_id)
+            .or(self.collides_self_body(snake_id))
+            .or(self.collides_other_body(snake_id))
+            .or(self.collides_head_to_head(snake_id))
     }
 
     #[inline]
-    fn collides_wall(&self, snake_id: usize) -> bool {
+    fn collides_wall(&self, snake_id: usize) -> Option<Collision> {
         let p = self.snakes[snake_id].head();
-        self.is_outside(*p)
+        if self.is_outside(*p) { Some(Collision::Wall{id: snake_id})} else { None}
     }
 
-    fn collides_self_body(&self, snake_id: usize) -> bool {
+    fn collides_self_body(&self, snake_id: usize) -> Option<Collision> {
         let snake = &self.snakes[snake_id];
-        snake.body_without_head().any(|p| p == snake.head())
+        if snake.body_without_head().any(|&p| p == *snake.head()) {
+            Some(Collision::SelfBody{id: snake_id})
+        } else {
+            None
+        }
     }
 
-    fn collides_other_body(&self, snake_id: usize) -> bool {
+    fn collides_other_body(&self, snake_id: usize) -> Option<Collision> {
         let snake = &self.snakes[snake_id];
         self.alive_snakes()
-            .any(|(_, other)| other.body_without_head().any(|p| p == snake.head()))
+            .filter(|(_, other)| other.body_without_head().any(|p| p == snake.head()))
+            .map(|(id_other, _)| Collision::OtherBody { id_1: snake_id, id_2: id_other })
+            .next()
     }
 
     fn collides_head_to_head(&self, snake_id: usize) -> Option<Collision> {
         let snake = &self.snakes[snake_id];
         self.alive_snakes()
             .filter(|&(i, other)| i != snake_id && other.head() == snake.head())
-            .map(|(_, other)| Collision::HeadToHead {
+            .map(|(id_other, other)| Collision::HeadToHead {
                 src_length: snake.length(),
                 dst_length: other.length(),
+                id_1: snake_id,
+                id_2: id_other,
             })
             .next()
     }

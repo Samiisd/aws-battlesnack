@@ -21,7 +21,7 @@ use rand::{
     Rng,
 };
 
-#[derive(Deserialize, Serialize, Clone, PartialEq, Eq, Debug, Copy)]
+#[derive(Hash, Deserialize, Serialize, Clone, PartialEq, Eq, Debug, Copy)]
 #[serde(rename_all(serialize = "lowercase", deserialize = "lowercase"))]
 pub enum Movement {
     Right,

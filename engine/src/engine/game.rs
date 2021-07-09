@@ -9,7 +9,7 @@ use std::{
 
 #[derive(Clone, Debug)]
 pub struct SnakeGame {
-    current_player: u8,
+    current_player: usize,
     movement_queue: Vec<Movement>,
     board: Board,
 }
@@ -17,7 +17,7 @@ pub struct SnakeGame {
 impl SnakeGame {
     pub fn new(board: Board) -> Self {
         SnakeGame {
-            current_player: 0,
+            current_player: 1,
             movement_queue: Vec::with_capacity(board.alive_snakes().count()),
             board,
         }
@@ -74,14 +74,16 @@ impl GameState for SnakeGame {
     type MoveList = Vec<Vec<Movement>>;
 
     fn current_player(&self) -> Self::Player {
-        0
+        self.current_player
     }
 
     fn available_moves(&self) -> Self::MoveList {
-        (0..self.board().snakes().len())
+        let s =(0..self.board().snakes().len())
             .map(|id| self.available_moves_snake(id))
             .multi_cartesian_product()
-            .collect()
+            .collect();
+        
+        s
     }
 
     fn make_move(&mut self, mov: &Self::Move) {

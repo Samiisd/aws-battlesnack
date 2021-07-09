@@ -15,10 +15,10 @@ use piston_window::*;
 const COLOR_WALL: [f32; 4] = [0.8, 0.8, 0.7, 1.];
 
 const OFFSET: (f64, f64) = (100., 100.);
-const BOARD_WIDTH: usize = 12;
-const BOARD_HEIGHT: usize = 12;
-const TILE_SIZE: f64 = 30.0;
-const FREQ_SECONDS: f64 = 0.4;
+const BOARD_WIDTH: usize = 9;
+const BOARD_HEIGHT: usize = 9;
+const TILE_SIZE: f64 = 20.0;
+const FREQ_SECONDS: f64 = 0.5;
 
 
 fn x<T>(v: T) -> f64 
@@ -77,16 +77,18 @@ fn render_players(board: &Board, players: &Vec<Box<dyn Player>>, t: math::Matrix
 
 fn main() {
     let mut players : Vec<Box<dyn Player>> = vec![
-        Box::new(ui::BotA::new(3, color::hex("eeff11"))),
+        Box::new(ui::BotA::new(12, color::hex("eeff11"))),
         // Box::new(ui::BotA::new(3, color::hex("00ff11"))),
-        // Box::new(ui::Human::new(color::hex("50E4EA"), [Key::Left, Key::Down, Key::Right, Key::Up])),
+        Box::new(ui::Human::new(color::hex("50E4EA"), [Key::Left, Key::Down, Key::Right, Key::Up])),
         Box::new(ui::Human::new(color::hex("57D658"), [Key::A, Key::S, Key::D, Key::W])),
+        // Box::new(ui::Human::new(color::hex("FC000A"), [Key::J, Key::K, Key::L, Key::I])),
     ];
 
     let snakes = vec![
-        Snake::new(Point { x: 8, y: 8}),
+        Snake::new(Point { x: 5, y: 8}),
         Snake::new(Point { x: 4, y: 2}),
-        // Snake::new(Point { x: 1, y: 5}),
+        Snake::new(Point { x: 1, y: 5}),
+        // Snake::new(Point { x: 1, y: 1}),
     ];
 
     let board = Board::new(BOARD_WIDTH as i32, BOARD_HEIGHT as i32, snakes);

@@ -1,3 +1,5 @@
+use crate::engine::Collision;
+
 use super::matrice::CellValue;
 use super::{Movement, Snake, SnakeGame};
 use mcts::{transposition_table::ApproxTable, tree_policy::UCTPolicy, Evaluator, MCTS};
@@ -60,17 +62,35 @@ impl Evaluator<MyMCTS> for MyEvaluator {
         let array = state.board().matrice().array().clone();
 
         let p_area = Self::expand_conquer_array(array, snakes);
-        let p_death: Self::StateEvaluation = snakes
+        let p_death: Array1<i64> = snakes
             .iter()
             .map(|s| if s.is_dead() { -1000 } else { 0 })
             .collect();
 
-        let mut p_total = p_area + p_death;
-        let a : i64 = (1..snakes.len())
-            .map(|i| (-0.5 * p_total[i] as f64) as i64)
-            .sum();
+        let mut p_collisions: Array1<i64> = Array1::zeros([snakes.len()]);
+        state.board().collisions()
+            .iter()
+            .flat_map(|c| match *c {
+                Collision::Wall { id } => vec![(id, -1000)],
+                Collision::SelfBody { id } => vec![(id, -1000)],
+                Collision::OtherBody { id_1, id_2 } => vec![(id_1, -1000), (id_2, 10)],
+                Collision::HeadToHead { src_length, dst_length, id_1, id_2 } => {
+                    if src_length == dst_length {
+                        vec![(id_1, -1000), (id_2, -1000)]
+                    } else if src_length > dst_length {
+                        vec![(id_1, 10), (id_2, -1000)] 
+                    } else {
+                        vec![(id_1, -1000), (id_2, 10)] 
+                    }
+                },
+            })
+            .for_each(|(id, score)| {
+                p_collisions[id] += score;
+            });
 
-        p_total[0] += a;
+
+        let p_total = p_area + p_collisions + p_death;
+
 
         (vec![(); moves.len()], p_total)
     }
@@ -89,7 +109,10 @@ impl Evaluator<MyMCTS> for MyEvaluator {
         evaluation: &Self::StateEvaluation,
         player: &mcts::Player<MyMCTS>,
     ) -> i64 {
-        evaluation[*player as usize]
+        let score_player = evaluation[*player];
+        let score_others = (evaluation.sum() - score_player) as f64;
+
+        score_player - (0.5 * score_others) as i64
     }
 }
 
@@ -102,8 +125,8 @@ impl MCTS for MyMCTS {
     type NodeData = ();
     type ExtraThreadData = ();
     type TreePolicy = UCTPolicy;
-    type TranspositionTable = ApproxTable<Self>;
-    // type TranspositionTable = ();
+    // type TranspositionTable = ApproxTable<Self>;
+    type TranspositionTable = ();
 
     fn virtual_loss(&self) -> i64 {
         0
