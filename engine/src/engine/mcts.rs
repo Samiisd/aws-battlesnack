@@ -2,7 +2,7 @@ use crate::engine::Collision;
 
 use super::matrice::CellValue;
 use super::{Movement, Snake, SnakeGame};
-use mcts::{transposition_table::ApproxTable, tree_policy::UCTPolicy, Evaluator, MCTS};
+use mcts::{tree_policy::UCTPolicy, Evaluator, MCTS};
 use ndarray::{Array1, Array2};
 use std::{collections::VecDeque, iter::FromIterator};
 use std::{usize, vec};
@@ -10,7 +10,7 @@ use std::{usize, vec};
 pub struct MyEvaluator;
 
 impl MyEvaluator {
-    fn expand_conquer_array(mut array: Array2<CellValue>, snakes: &Vec<Snake>) -> Array1<i64> {
+    fn expand_conquer_array(mut array: Array2<CellValue>, snakes: &[Snake]) -> Array1<i64> {
         let (height, width) = (array.shape()[0] as i32, array.shape()[1] as i32);
         // let mut lengths: Array1<i64> = snakes.iter().map(|s| s.body().len() as i64).collect();
         // let mut lengths: Array1<i64> = snakes.iter().map(|s| s.body().len() as i64).collect();
@@ -75,12 +75,10 @@ impl Evaluator<MyMCTS> for MyEvaluator {
                 Collision::SelfBody { id } => vec![(id, -1000)],
                 Collision::OtherBody { id_1, id_2 } => vec![(id_1, -1000), (id_2, 10)],
                 Collision::HeadToHead { src_length, dst_length, id_1, id_2 } => {
-                    if src_length == dst_length {
-                        vec![(id_1, -1000), (id_2, -1000)]
-                    } else if src_length > dst_length {
-                        vec![(id_1, 10), (id_2, -1000)] 
-                    } else {
-                        vec![(id_1, -1000), (id_2, 10)] 
+                    match src_length {
+                        x if x == dst_length => vec![(id_1, -1000), (id_2, -1000)],
+                        x if x > dst_length =>vec![(id_1, 10), (id_2, -1000)] ,
+                        _ =>vec![(id_1, -1000), (id_2, 10)] 
                     }
                 },
             })
@@ -145,7 +143,7 @@ impl MCTS for MyMCTS {
         children: &'a [mcts::MoveInfo<Self>],
     ) -> &'a mcts::MoveInfo<Self> {
         children
-            .into_iter()
+            .iter()
             .max_by_key(|child| child.visits())
             .unwrap()
     }

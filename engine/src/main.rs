@@ -1,16 +1,12 @@
 #![feature(hash_drain_filter)]
-#![feature(deque_range)]
-#![feature(option_insert)]
 mod engine;
 mod ui;
-
 
 extern crate piston_window;
 
 use crate::engine::DEFAULT_SNAKE_HEALTH;
 use crate::engine::{Board, SnakeGame, Point, Snake};
 use crate::ui::Player;
-use mcts::GameState;
 use piston_window::*;
 use piston_window::color::hex;
 
@@ -20,7 +16,7 @@ const OFFSET: (f64, f64) = (100., 100.);
 const BOARD_WIDTH: usize = 9;
 const BOARD_HEIGHT: usize = 9;
 const TILE_SIZE: f64 = 20.0;
-const FREQ_SECONDS: f64 = 0.5;
+const FREQ_SECONDS: f64 = 0.3;
 
 
 fn x<T>(v: T) -> f64 
@@ -59,7 +55,7 @@ fn render_food(board: &Board, t: math::Matrix2d, gfx: &mut G2d) {
     });
 }
 
-fn render_players(board: &Board, players: &Vec<Box<dyn Player>>, t: math::Matrix2d, gfx: &mut G2d) {
+fn render_players(board: &Board, players: &[Box<dyn Player>], t: math::Matrix2d, gfx: &mut G2d) {
     board.alive_snakes().for_each(|(id, s)| {
         let head = s.head();
         let mut color = players[id].get_color();
@@ -77,18 +73,14 @@ fn render_players(board: &Board, players: &Vec<Box<dyn Player>>, t: math::Matrix
         });
 
         // draw head
-        rectangle(
-            [1., 1., 1., 1.],
-            rectangle::square(x(head.x), y(head.y), TILE_SIZE/2.),
-            t,
-            gfx,
-        );
+        ellipse(hex("ffffff"), ellipse::circle(x(head.x as f64 + 0.5), y(head.y as f64 + 0.5), TILE_SIZE/4.), t, gfx);
     });
 }
 
 fn main() {
     let mut players : Vec<Box<dyn Player>> = vec![
-        Box::new(ui::BotA::new(5, color::hex("eeff11"))),
+        Box::new(ui::BotA::new(12, color::hex("eeff11"))),
+        // Box::new(ui::BotA::new(1, color::hex("eeff11"))),
         // Box::new(ui::BotA::new(3, color::hex("00ff11"))),
         Box::new(ui::Human::new(color::hex("50E4EA"), [Key::Left, Key::Down, Key::Right, Key::Up])),
         Box::new(ui::Human::new(color::hex("57D658"), [Key::A, Key::S, Key::D, Key::W])),
@@ -98,7 +90,8 @@ fn main() {
     let snakes = vec![
         Snake::new(Point { x: 5, y: 8}),
         Snake::new(Point { x: 4, y: 2}),
-        Snake::new(Point { x: 1, y: 5}),
+        Snake::new(Point { x: 2, y: 5}),
+        // Snake::new(Point { x: 1, y: 5}),
         // Snake::new(Point { x: 1, y: 1}),
     ];
 
@@ -144,7 +137,11 @@ fn main() {
 
                 players
                     .iter_mut()
-                    .for_each(|p| p.think(&game));
+                    .enumerate()
+                    .for_each(|(id, p)|{
+                        game.set_player(id);
+                        p.think(&game);
+                    });
                 
                 time = 0.;
             }

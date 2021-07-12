@@ -9,6 +9,7 @@ pub struct Human {
     keys: [Key; 4],
     color: [f32; 4],
     last_mov: Movement,
+    registered_mov: Option<Movement>,
 }
 
 impl Human {
@@ -17,6 +18,7 @@ impl Human {
             keys,
             color,
             last_mov: Movement::Up,
+            registered_mov: None,
         }
     }
 
@@ -24,6 +26,8 @@ impl Human {
 
 impl Player for Human {
     fn next_move(&mut self) -> Movement {
+        self.last_mov = self.registered_mov.unwrap_or(self.last_mov);
+        self.registered_mov = None;
         self.last_mov
     }
 
@@ -42,9 +46,9 @@ impl Player for Human {
 
         let mov = mov.unwrap_or(self.last_mov);
         if !mov.is_opposite(self.last_mov) {
-            self.last_mov = mov;
+            self.registered_mov = Some(mov);
         }
     }
 
-    fn think(&mut self, _: &SnakeGame) { () }
+    fn think(&mut self, _: &SnakeGame) { }
 }

@@ -12,7 +12,7 @@ pub struct Matrice {
 }
 
 impl Matrice {
-    pub fn new(snakes: &Vec<Snake>, height: usize, width: usize) -> Self {
+    pub fn new(snakes: &[Snake], height: usize, width: usize) -> Self {
         let mut matrice = Matrice {
             height,
             width,
@@ -37,7 +37,7 @@ impl Matrice {
             if let Some(tail) = tail {
                 debug_assert_eq!(
                     idx,
-                    (self.get(tail).unwrap_or(255)) as SnakeId,
+                    self.get(tail).unwrap_or(255) as SnakeId,
                     "Probably moving wrong snake"
                 );
                 self.mark_empty(tail);
@@ -63,11 +63,9 @@ impl Matrice {
 
     #[inline]
     pub fn get(&self, p: Point) -> Option<CellValue> {
-        let v = self.array[[p.y as usize, p.x as usize]];
-        if v == 0 {
-            None
-        } else {
-            Some(v - 1)
+        match self.array[[p.y as usize, p.x as usize]] {
+            0 => None,
+            v => Some(v-1),
         }
     }
 

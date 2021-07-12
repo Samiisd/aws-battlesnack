@@ -13,7 +13,7 @@ use super::{matrice::Displacement, Collision, Point, Snake};
 
 pub type SnakeId = u8;
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct Board {
     height: i32,
     width: i32,
@@ -70,7 +70,7 @@ impl Board {
         }
 
         // update matrice
-        self.update_matrice(displacements.clone()); // FIXME: remove clone
+        self.update_matrice(displacements); // FIXME: remove clone
     }
 }
 
@@ -176,11 +176,11 @@ impl Board {
         let snakes_to_kill : Vec<usize> = self.collisions
             .iter()
             .filter(|&c| c.causes_death())
-            .filter_map(|c| match *c {
-                Collision::Wall { id } => Some(id),
-                Collision::SelfBody { id } => Some(id),
-                Collision::OtherBody { id_1, ..} => Some(id_1),
-                Collision::HeadToHead { id_1, ..} => Some(id_1),
+            .map(|c| match *c {
+                Collision::Wall { id } => id,
+                Collision::SelfBody { id } => id,
+                Collision::OtherBody { id_1, ..} => id_1,
+                Collision::HeadToHead { id_1, ..} => id_1,
             }).collect();
 
         // kill snakes that got killing collision
@@ -199,7 +199,7 @@ impl Board {
     fn spawn_food_rnd(&mut self, n: usize) {
         let a : Vec<Point> = self.unoccupied_points()
             .choose_multiple(&mut rand::thread_rng(), n)
-            .map(|&p| p)
+            .copied()
             .collect();
         
         dbg!(&a, n);
@@ -237,9 +237,9 @@ impl Board {
         debug_assert!(!self.snakes[snake_id].is_dead());
 
         self.collides_wall(snake_id)
-            .or(self.collides_self_body(snake_id))
-            .or(self.collides_other_body(snake_id))
-            .or(self.collides_head_to_head(snake_id))
+            .or_else(|| self.collides_self_body(snake_id))
+            .or_else(|| self.collides_other_body(snake_id))
+            .or_else(|| self.collides_head_to_head(snake_id))
     }
 
     #[inline]

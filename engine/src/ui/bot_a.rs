@@ -2,9 +2,9 @@ use crate::engine::Movement;
 use std::collections::HashMap;
 
 use itertools::Itertools;
-use mcts::{AsyncSearchOwned, GameState};
+use mcts::AsyncSearchOwned;
 
-use mcts::{MCTSManager, transposition_table::ApproxTable, tree_policy::UCTPolicy};
+use mcts::{MCTSManager, tree_policy::UCTPolicy};
 
 use crate::engine::{MyEvaluator, MyMCTS, SnakeGame};
 use super::Player;
@@ -48,32 +48,27 @@ impl Player for BotA {
             Some(search) => {
                 let mcts = search.halt();
     
-                
-                // let best_moves = mcts.principal_variation_info(10.min(available_moves));
-                let best_moves : Vec<(Movement, f64)>= mcts.tree().root_node().moves()
+                let best_moves = mcts.tree().root_node().moves()
                     .filter(|m| m.visits() > 0)
                     .map(|m| (m.get_move()[self.id], m.sum_rewards() as f64 / m.visits() as f64))
                     .sorted_by(|(_,a), (_,b)| b.partial_cmp(a).unwrap())
-                    .take(30)
-                    .collect();
+                    .take(50);
 
                 let moves_eval = best_moves
-                    .into_iter()
                     .fold(HashMap::new(), |mut acc, (m, score)| {
-                        let acc_score = acc.entry(m).or_insert(vec![]);
+                        let acc_score = acc.entry(m).or_insert_with(Vec::new);
                         acc_score.push(score);
                         acc
                     });
     
-                // dbg!(mcts.best_move());
                 dbg!(mcts.tree().root_state().board().matrice().array());
                 dbg!(&moves_eval);
 
                 let b : HashMap<Movement, f64> = moves_eval
                     .into_iter()
-                    // .map(|(m, v)| (m, v.iter().sum::<f64>() / v.len() as f64))
-                    .map(|(m, v)| 
-                        (m, v.into_iter().min_by(|a,b| a.partial_cmp(b).unwrap()).unwrap()))
+                    .map(|(m, v)| (m, v.iter().sum::<f64>() / v.len() as f64))
+                    // .map(|(m, v)| 
+                        // (m, v.into_iter().min_by(|a,b| a.partial_cmp(b).unwrap()).unwrap()))
                     .collect();
 
                 dbg!(&b);
@@ -100,5 +95,5 @@ impl Player for BotA {
         self.color
     }
 
-    fn register_key_event(&mut self, _: piston_window::Button) { () }    
+    fn register_key_event(&mut self, _: piston_window::Button) { }    
 }

@@ -23,6 +23,11 @@ impl SnakeGame {
         }
     }
 
+    pub fn set_player(&mut self, id: usize) {
+        debug_assert!(id < self.board.snakes().len()); 
+        self.current_player = id
+    }
+
     pub fn available_moves_snake(&self, id: usize) -> Vec<Movement> {
         let s = &self.board.snakes()[id];
         let head = s.head();
