@@ -38,7 +38,7 @@ impl Hash for Board {
 impl Board {
     pub fn new(width: i32, height: i32, snakes: Vec<Snake>) -> Self {
         Self {
-            food_min_amount: snakes.len()-1,
+            food_min_amount: snakes.len() - 1,
             matrice: Matrice::new(&snakes, height as usize, width as usize),
             height,
             width,
@@ -101,6 +101,7 @@ impl Board {
                 .into_iter()
                 .filter(|(id, ..)| !self.snakes[*id as usize].is_dead())
                 .collect(),
+            &self.collisions,
         );
     }
 
@@ -172,16 +173,18 @@ impl Board {
             .alive_snakes()
             .filter_map(|(i, _)| self.check_collision(i))
             .collect();
-        
-        let snakes_to_kill : Vec<usize> = self.collisions
+
+        let snakes_to_kill: Vec<usize> = self
+            .collisions
             .iter()
             .filter(|&c| c.causes_death())
             .map(|c| match *c {
                 Collision::Wall { id } => id,
                 Collision::SelfBody { id } => id,
-                Collision::OtherBody { id_1, ..} => id_1,
-                Collision::HeadToHead { id_1, ..} => id_1,
-            }).collect();
+                Collision::OtherBody { id_1, .. } => id_1,
+                Collision::HeadToHead { id_1, .. } => id_1,
+            })
+            .collect();
 
         // kill snakes that got killing collision
         self.kill_snakes(snakes_to_kill);
@@ -197,28 +200,30 @@ impl Board {
     }
 
     fn spawn_food_rnd(&mut self, n: usize) {
-        let a : Vec<Point> = self.unoccupied_points()
+        let a: Vec<Point> = self
+            .unoccupied_points()
             .choose_multiple(&mut rand::thread_rng(), n)
             .copied()
             .collect();
-        
-        dbg!(&a, n);
 
         a.iter().for_each(|p| {
-                self.food.insert(*p);
-            });
+            self.food.insert(*p);
+        });
     }
 
     fn unoccupied_points(&self) -> Vec<Point> {
-        let mut h_empty : Array2<bool> = Array2::from_elem([self.height as usize, self.width as usize], true);
+        let mut h_empty: Array2<bool> =
+            Array2::from_elem([self.height as usize, self.width as usize], true);
         let mut mark_not_empty = |p: &Point| h_empty[[p.y as usize, p.x as usize]] = false;
 
-        self.alive_snakes().for_each(|(_, s)| s.body().iter().for_each(&mut mark_not_empty));
+        self.alive_snakes()
+            .for_each(|(_, s)| s.body().iter().for_each(&mut mark_not_empty));
         self.food.iter().for_each(&mut mark_not_empty);
 
-        (0..self.height).cartesian_product(0..self.width)
+        (0..self.height)
+            .cartesian_product(0..self.width)
             .filter(|&(y, x)| h_empty[[y as usize, x as usize]])
-            .map(|(y,x)| Point {y, x})
+            .map(|(y, x)| Point { y, x })
             .collect()
     }
 }
@@ -245,13 +250,17 @@ impl Board {
     #[inline]
     fn collides_wall(&self, snake_id: usize) -> Option<Collision> {
         let p = self.snakes[snake_id].head();
-        if self.is_outside(*p) { Some(Collision::Wall{id: snake_id})} else { None}
+        if self.is_outside(*p) {
+            Some(Collision::Wall { id: snake_id })
+        } else {
+            None
+        }
     }
 
     fn collides_self_body(&self, snake_id: usize) -> Option<Collision> {
         let snake = &self.snakes[snake_id];
         if snake.body_without_head().any(|&p| p == *snake.head()) {
-            Some(Collision::SelfBody{id: snake_id})
+            Some(Collision::SelfBody { id: snake_id })
         } else {
             None
         }
@@ -261,7 +270,11 @@ impl Board {
         let snake = &self.snakes[snake_id];
         self.alive_snakes()
             .filter(|(_, other)| other.body_without_head().any(|p| p == snake.head()))
-            .map(|(id_other, _)| Collision::OtherBody { id_1: snake_id, id_2: id_other })
+            .map(|(id_other, _)| Collision::OtherBody {
+                id_1: snake_id,
+                id_2: id_other,
+                loc: *snake.head(),
+            })
             .next()
     }
 
@@ -274,6 +287,7 @@ impl Board {
                 dst_length: other.length(),
                 id_1: snake_id,
                 id_2: id_other,
+                loc: *snake.head(),
             })
             .next()
     }

@@ -5,10 +5,10 @@ mod ui;
 extern crate piston_window;
 
 use crate::engine::DEFAULT_SNAKE_HEALTH;
-use crate::engine::{Board, SnakeGame, Point, Snake};
+use crate::engine::{Board, Point, Snake, SnakeGame};
 use crate::ui::Player;
-use piston_window::*;
 use piston_window::color::hex;
+use piston_window::*;
 
 const COLOR_WALL: [f32; 4] = [0.8, 0.8, 0.7, 1.];
 
@@ -18,40 +18,71 @@ const BOARD_HEIGHT: usize = 9;
 const TILE_SIZE: f64 = 20.0;
 const FREQ_SECONDS: f64 = 0.3;
 
-
-fn x<T>(v: T) -> f64 
-     where T : Into<f64> {
+fn x<T>(v: T) -> f64
+where
+    T: Into<f64>,
+{
     v.into() * TILE_SIZE + OFFSET.0
 }
 
-fn y<T>(v: T) -> f64 
-     where T : Into<f64> {
+fn y<T>(v: T) -> f64
+where
+    T: Into<f64>,
+{
     v.into() * TILE_SIZE + OFFSET.1
 }
-
 
 fn render_walls(board: &Board, t: math::Matrix2d, gfx: &mut G2d) {
     let (w, h) = (board.width(), board.height());
 
     let wall_size = TILE_SIZE;
 
-    // upper row 
-    line(COLOR_WALL, wall_size, [x(-1), y(-1), x(w+1), y(-1)], t, gfx);
+    // upper row
+    line(
+        COLOR_WALL,
+        wall_size,
+        [x(-1), y(-1), x(w + 1), y(-1)],
+        t,
+        gfx,
+    );
 
     // left column
-    line(COLOR_WALL, wall_size, [x(-1), y(-1), x(-1), y(h+1)], t, gfx);
+    line(
+        COLOR_WALL,
+        wall_size,
+        [x(-1), y(-1), x(-1), y(h + 1)],
+        t,
+        gfx,
+    );
 
     // right column
-    line(COLOR_WALL, wall_size, [x(w+1), y(-1), x(w+1), y(h+1)], t, gfx);
+    line(
+        COLOR_WALL,
+        wall_size,
+        [x(w + 1), y(-1), x(w + 1), y(h + 1)],
+        t,
+        gfx,
+    );
 
     // bottom row
-    line(COLOR_WALL, wall_size, [x(-1), y(h+1), x(board.width()+1), y(h+1)], t, gfx);
+    line(
+        COLOR_WALL,
+        wall_size,
+        [x(-1), y(h + 1), x(board.width() + 1), y(h + 1)],
+        t,
+        gfx,
+    );
 }
 
 fn render_food(board: &Board, t: math::Matrix2d, gfx: &mut G2d) {
     let food_size = 0.3 * TILE_SIZE;
-    board.food().iter().for_each(|p| { 
-        ellipse(hex("ff0c0c"), ellipse::circle(x(p.x as f64 + 0.5), y(p.y as f64 + 0.5), food_size), t, gfx); 
+    board.food().iter().for_each(|p| {
+        ellipse(
+            hex("ff0c0c"),
+            ellipse::circle(x(p.x as f64 + 0.5), y(p.y as f64 + 0.5), food_size),
+            t,
+            gfx,
+        );
     });
 }
 
@@ -63,34 +94,43 @@ fn render_players(board: &Board, players: &[Box<dyn Player>], t: math::Matrix2d,
         color[3] = f;
 
         // draw body
-        s.body_without_head().for_each(|p| {
-            rectangle(
-                color,
-                rectangle::square(x(p.x), y(p.y), TILE_SIZE),
-                t,
-                gfx,
-            )
-        });
+        s.body_without_head()
+            .for_each(|p| rectangle(color, rectangle::square(x(p.x), y(p.y), TILE_SIZE), t, gfx));
 
         // draw head
-        ellipse(hex("ffffff"), ellipse::circle(x(head.x as f64 + 0.5), y(head.y as f64 + 0.5), TILE_SIZE/4.), t, gfx);
+        ellipse(
+            hex("ffffff"),
+            ellipse::circle(
+                x(head.x as f64 + 0.5),
+                y(head.y as f64 + 0.5),
+                TILE_SIZE / 4.,
+            ),
+            t,
+            gfx,
+        );
     });
 }
 
 fn main() {
-    let mut players : Vec<Box<dyn Player>> = vec![
-        Box::new(ui::BotA::new(12, color::hex("eeff11"))),
+    let mut players: Vec<Box<dyn Player>> = vec![
+        Box::new(ui::BotA::new(1, color::hex("eeff11"))),
         // Box::new(ui::BotA::new(1, color::hex("eeff11"))),
         // Box::new(ui::BotA::new(3, color::hex("00ff11"))),
-        Box::new(ui::Human::new(color::hex("50E4EA"), [Key::Left, Key::Down, Key::Right, Key::Up])),
-        Box::new(ui::Human::new(color::hex("57D658"), [Key::A, Key::S, Key::D, Key::W])),
+        Box::new(ui::Human::new(
+            color::hex("50E4EA"),
+            [Key::Left, Key::Down, Key::Right, Key::Up],
+        )),
+        Box::new(ui::Human::new(
+            color::hex("57D658"),
+            [Key::A, Key::S, Key::D, Key::W],
+        )),
         // Box::new(ui::Human::new(color::hex("FC000A"), [Key::J, Key::K, Key::L, Key::I])),
     ];
 
     let snakes = vec![
-        Snake::new(Point { x: 5, y: 8}),
-        Snake::new(Point { x: 4, y: 2}),
-        Snake::new(Point { x: 2, y: 5}),
+        Snake::new(Point { x: 5, y: 8 }),
+        Snake::new(Point { x: 4, y: 2 }),
+        Snake::new(Point { x: 2, y: 5 }),
         // Snake::new(Point { x: 1, y: 5}),
         // Snake::new(Point { x: 1, y: 1}),
     ];
@@ -135,14 +175,11 @@ fn main() {
             if time >= FREQ_SECONDS {
                 game.step(players.iter_mut().map(|p| p.next_move()).collect());
 
-                players
-                    .iter_mut()
-                    .enumerate()
-                    .for_each(|(id, p)|{
-                        game.set_player(id);
-                        p.think(&game);
-                    });
-                
+                players.iter_mut().enumerate().for_each(|(id, p)| {
+                    game.set_player(id);
+                    p.think(&game);
+                });
+
                 time = 0.;
             }
         });

@@ -1,5 +1,5 @@
-use piston_window::Button;
 use crate::engine::{Movement, SnakeGame};
+use piston_window::Button;
 
 pub trait Player {
     fn think(&mut self, game: &SnakeGame);

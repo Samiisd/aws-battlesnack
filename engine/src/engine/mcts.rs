@@ -13,8 +13,8 @@ impl MyEvaluator {
     fn expand_conquer_array(mut array: Array2<CellValue>, snakes: &[Snake]) -> Array1<i64> {
         let (height, width) = (array.shape()[0] as i32, array.shape()[1] as i32);
         // let mut lengths: Array1<i64> = snakes.iter().map(|s| s.body().len() as i64).collect();
-        // let mut lengths: Array1<i64> = snakes.iter().map(|s| s.body().len() as i64).collect();
-        let mut lengths: Array1<i64> = Array1::zeros([snakes.len()]);
+        let mut lengths: Array1<i64> = snakes.iter().map(|s| s.body().len() as i64).collect();
+        // let mut lengths: Array1<i64> = Array1::zeros([snakes.len()]);
 
         let mut q = VecDeque::from_iter(snakes.iter().enumerate().map(|(id, s)| (id, *s.head())));
 
@@ -64,31 +64,35 @@ impl Evaluator<MyMCTS> for MyEvaluator {
         let p_area = Self::expand_conquer_array(array, snakes);
         let p_death: Array1<i64> = snakes
             .iter()
-            .map(|s| if s.is_dead() { -1000 } else { 0 })
+            .map(|s| if s.is_dead() { -100 } else { 0 })
             .collect();
 
         let mut p_collisions: Array1<i64> = Array1::zeros([snakes.len()]);
-        state.board().collisions()
+        state
+            .board()
+            .collisions()
             .iter()
             .flat_map(|c| match *c {
-                Collision::Wall { id } => vec![(id, -1000)],
-                Collision::SelfBody { id } => vec![(id, -1000)],
-                Collision::OtherBody { id_1, id_2 } => vec![(id_1, -1000), (id_2, 10)],
-                Collision::HeadToHead { src_length, dst_length, id_1, id_2 } => {
-                    match src_length {
-                        x if x == dst_length => vec![(id_1, -1000), (id_2, -1000)],
-                        x if x > dst_length =>vec![(id_1, 10), (id_2, -1000)] ,
-                        _ =>vec![(id_1, -1000), (id_2, 10)] 
-                    }
+                Collision::Wall { id } => vec![(id, -100)],
+                Collision::SelfBody { id } => vec![(id, -100)],
+                Collision::OtherBody { id_1, id_2, .. } => vec![(id_1, -100), (id_2, 10)],
+                Collision::HeadToHead {
+                    src_length,
+                    dst_length,
+                    id_1,
+                    id_2,
+                    ..
+                } => match src_length {
+                    x if x == dst_length => vec![(id_1, -100), (id_2, -100)],
+                    x if x > dst_length => vec![(id_1, 10), (id_2, -100)],
+                    _ => vec![(id_1, -100), (id_2, 10)],
                 },
             })
             .for_each(|(id, score)| {
                 p_collisions[id] += score;
             });
 
-
         let p_total = p_area + p_collisions + p_death;
-
 
         (vec![(); moves.len()], p_total)
     }
@@ -142,10 +146,7 @@ impl MCTS for MyMCTS {
         &self,
         children: &'a [mcts::MoveInfo<Self>],
     ) -> &'a mcts::MoveInfo<Self> {
-        children
-            .iter()
-            .max_by_key(|child| child.visits())
-            .unwrap()
+        children.iter().max_by_key(|child| child.visits()).unwrap()
     }
 
     fn max_playout_length(&self) -> usize {

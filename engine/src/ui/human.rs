@@ -1,5 +1,5 @@
-use crate::SnakeGame;
 use crate::engine::Movement;
+use crate::SnakeGame;
 use piston_window::Button;
 use piston_window::Key;
 
@@ -21,7 +21,6 @@ impl Human {
             registered_mov: None,
         }
     }
-
 }
 
 impl Player for Human {
@@ -50,5 +49,5 @@ impl Player for Human {
         }
     }
 
-    fn think(&mut self, _: &SnakeGame) { }
+    fn think(&mut self, _: &SnakeGame) {}
 }

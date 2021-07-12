@@ -4,10 +4,10 @@ use std::collections::HashMap;
 use itertools::Itertools;
 use mcts::AsyncSearchOwned;
 
-use mcts::{MCTSManager, tree_policy::UCTPolicy};
+use mcts::{tree_policy::UCTPolicy, MCTSManager};
 
-use crate::engine::{MyEvaluator, MyMCTS, SnakeGame};
 use super::Player;
+use crate::engine::{MyEvaluator, MyMCTS, SnakeGame};
 
 pub struct BotA {
     async_search: Option<AsyncSearchOwned<MyMCTS>>,
@@ -47,28 +47,35 @@ impl Player for BotA {
         let best_move = match search {
             Some(search) => {
                 let mcts = search.halt();
-    
-                let best_moves = mcts.tree().root_node().moves()
+
+                let best_moves = mcts
+                    .tree()
+                    .root_node()
+                    .moves()
                     .filter(|m| m.visits() > 0)
-                    .map(|m| (m.get_move()[self.id], m.sum_rewards() as f64 / m.visits() as f64))
-                    .sorted_by(|(_,a), (_,b)| b.partial_cmp(a).unwrap())
+                    .map(|m| {
+                        (
+                            m.get_move()[self.id],
+                            m.sum_rewards() as f64 / m.visits() as f64,
+                        )
+                    })
+                    .sorted_by(|(_, a), (_, b)| b.partial_cmp(a).unwrap())
                     .take(50);
 
-                let moves_eval = best_moves
-                    .fold(HashMap::new(), |mut acc, (m, score)| {
-                        let acc_score = acc.entry(m).or_insert_with(Vec::new);
-                        acc_score.push(score);
-                        acc
-                    });
-    
+                let moves_eval = best_moves.fold(HashMap::new(), |mut acc, (m, score)| {
+                    let acc_score = acc.entry(m).or_insert_with(Vec::new);
+                    acc_score.push(score);
+                    acc
+                });
+
                 dbg!(mcts.tree().root_state().board().matrice().array());
                 dbg!(&moves_eval);
 
-                let b : HashMap<Movement, f64> = moves_eval
+                let b: HashMap<Movement, f64> = moves_eval
                     .into_iter()
                     .map(|(m, v)| (m, v.iter().sum::<f64>() / v.len() as f64))
-                    // .map(|(m, v)| 
-                        // (m, v.into_iter().min_by(|a,b| a.partial_cmp(b).unwrap()).unwrap()))
+                    // .map(|(m, v)|
+                    // (m, v.into_iter().min_by(|a,b| a.partial_cmp(b).unwrap()).unwrap()))
                     .collect();
 
                 dbg!(&b);
@@ -76,12 +83,12 @@ impl Player for BotA {
                 b.into_iter()
                     // .map(|(m, v)| (m, v.iter().sum::<f64>() / v.len() as f64))
                     .max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap())
-                    .map(|(m,_)| m)
+                    .map(|(m, _)| m)
             }
             None => None,
         };
 
-        let best_move  = best_move.unwrap_or_else(|| {
+        let best_move = best_move.unwrap_or_else(|| {
             dbg!("WTFFF, answering random movement");
             rand::random()
         });
@@ -95,5 +102,5 @@ impl Player for BotA {
         self.color
     }
 
-    fn register_key_event(&mut self, _: piston_window::Button) { }    
+    fn register_key_event(&mut self, _: piston_window::Button) {}
 }

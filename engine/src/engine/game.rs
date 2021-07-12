@@ -24,7 +24,7 @@ impl SnakeGame {
     }
 
     pub fn set_player(&mut self, id: usize) {
-        debug_assert!(id < self.board.snakes().len()); 
+        debug_assert!(id < self.board.snakes().len());
         self.current_player = id
     }
 
@@ -87,11 +87,11 @@ impl GameState for SnakeGame {
     }
 
     fn available_moves(&self) -> Self::MoveList {
-        let s =(0..self.board().snakes().len())
+        let s = (0..self.board().snakes().len())
             .map(|id| self.available_moves_snake(id))
             .multi_cartesian_product()
             .collect();
-        
+
         s
     }
 

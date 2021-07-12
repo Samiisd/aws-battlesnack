@@ -1,6 +1,8 @@
 use crate::engine::{board::SnakeId, Point, Snake};
 use ndarray::Array2;
 
+use super::Collision;
+
 pub(crate) type CellValue = u8;
 pub type Displacement = (SnakeId, (Option<Point>, Point));
 
@@ -32,14 +34,30 @@ impl Matrice {
 
 // updaters
 impl Matrice {
-    pub fn update(&mut self, displacements: Vec<Displacement>) {
+    pub fn update(&mut self, displacements: Vec<Displacement>, collisions: &[Collision]) {
+        // fix collisions overrides
+        collisions
+            .iter()
+            .filter_map(|c| match c {
+                Collision::OtherBody { id_2, loc, .. } => Some((id_2, loc)),
+                Collision::HeadToHead {
+                    src_length,
+                    dst_length,
+                    id_1,
+                    id_2,
+                    loc,
+                } => match src_length {
+                    _ if src_length < dst_length => Some((id_2, loc)),
+                    _ if src_length > dst_length => Some((id_1, loc)),
+                    _ => None,
+                },
+                _ => None,
+            })
+            .for_each(|(&id, &p)| self.mark_snake(id as u8, p));
+
+        // apply displacements
         displacements.iter().for_each(|&(idx, (tail, to))| {
             if let Some(tail) = tail {
-                debug_assert_eq!(
-                    idx,
-                    self.get(tail).unwrap_or(255) as SnakeId,
-                    "Probably moving wrong snake"
-                );
                 self.mark_empty(tail);
             }
 
@@ -65,7 +83,7 @@ impl Matrice {
     pub fn get(&self, p: Point) -> Option<CellValue> {
         match self.array[[p.y as usize, p.x as usize]] {
             0 => None,
-            v => Some(v-1),
+            v => Some(v - 1),
         }
     }
 
