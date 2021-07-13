@@ -100,6 +100,4 @@ impl Player for BotA {
     fn get_color(&self) -> [f32; 4] {
         self.color
     }
-
-    fn register_key_event(&mut self, _: piston_window::Button) {}
 }
