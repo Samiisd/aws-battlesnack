@@ -17,13 +17,12 @@ pub struct BotA {
 }
 
 impl BotA {
-    pub fn new(n_threads: usize, color: [f32; 4]) -> Self {
+    pub fn new(id: usize, n_threads: usize, color: [f32; 4]) -> Self {
         BotA {
+            id,
             color,
             n_threads,
             async_search: None,
-            // FIXME: id shouldn't be hardcoded
-            id: 0,
         }
     }
 }

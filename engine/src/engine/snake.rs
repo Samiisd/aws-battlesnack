@@ -24,6 +24,15 @@ impl Snake {
         }
     }
 
+    pub fn new_from(health: i32, body: Vec<Point>, length: usize, head: Point) -> Self {
+        Snake {
+            body: VecDeque::from_iter(body),
+            health,
+            length,
+            head,
+        }
+    }
+
     pub fn apply_move(&mut self, mov: Movement) -> (Option<Point>, Point) {
         debug_assert!(!self.is_dead());
 

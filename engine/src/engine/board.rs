@@ -3,7 +3,7 @@ use ndarray::Array2;
 use rand::prelude::SliceRandom;
 
 use crate::engine::matrice::Matrice;
-use std::collections::HashSet;
+use std::{collections::HashSet, iter::FromIterator};
 use std::hash::Hash;
 use std::vec;
 
@@ -45,6 +45,19 @@ impl Board {
             snakes,
             collisions: vec![],
             food: HashSet::new(),
+            food_spawn_chance: 0.15,
+        }
+    }
+
+    pub fn new_from(width: i32, height: i32, snakes: Vec<Snake>, food: &[Point]) -> Self {
+        Self {
+            food_min_amount: snakes.len() - 1,
+            matrice: Matrice::new(&snakes, height as usize, width as usize),
+            height,
+            width,
+            snakes,
+            collisions: vec![],
+            food: HashSet::from_iter(food.iter().map(|p| *p)),
             food_spawn_chance: 0.15,
         }
     }

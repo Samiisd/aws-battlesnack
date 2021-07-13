@@ -10,7 +10,6 @@ use std::{
 #[derive(Clone, Debug)]
 pub struct SnakeGame {
     current_player: usize,
-    movement_queue: Vec<Movement>,
     board: Board,
 }
 
@@ -18,7 +17,6 @@ impl SnakeGame {
     pub fn new(board: Board) -> Self {
         SnakeGame {
             current_player: 0,
-            movement_queue: Vec::with_capacity(board.alive_snakes().count()),
             board,
         }
     }

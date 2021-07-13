@@ -1,9 +1,8 @@
-use crate::engine::Movement;
+use crate::engine::{Movement, Player};
 use crate::SnakeGame;
 use piston_window::Button;
 use piston_window::Key;
 
-use super::player::Player;
 
 pub struct Human {
     keys: [Key; 4],

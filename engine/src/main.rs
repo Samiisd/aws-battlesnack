@@ -4,9 +4,7 @@ mod ui;
 
 extern crate piston_window;
 
-use crate::engine::DEFAULT_SNAKE_HEALTH;
-use crate::engine::{Board, Point, Snake, SnakeGame};
-use crate::ui::Player;
+use crate::engine::{BotA, DEFAULT_SNAKE_HEALTH, Player, Board, Point, Snake, SnakeGame};
 use piston_window::color::hex;
 use piston_window::*;
 
@@ -113,7 +111,7 @@ fn render_players(board: &Board, players: &[Box<dyn Player>], t: math::Matrix2d,
 
 fn main() {
     let mut players: Vec<Box<dyn Player>> = vec![
-        Box::new(ui::BotA::new(12, color::hex("eeff11"))),
+        Box::new(BotA::new(0, 12, color::hex("eeff11"))),
         // Box::new(ui::BotA::new(1, color::hex("eeff11"))),
         // Box::new(ui::BotA::new(3, color::hex("00ff11"))),
         Box::new(ui::Human::new(

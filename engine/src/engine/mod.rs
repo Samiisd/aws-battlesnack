@@ -8,6 +8,8 @@ mod mcts;
 mod point;
 mod reward;
 mod snake;
+mod bot_a;
+mod player;
 
 pub use self::mcts::{MyEvaluator, MyMCTS};
 pub use board::Board;
@@ -15,6 +17,8 @@ pub use collision::Collision;
 pub use game::SnakeGame;
 pub use point::Point;
 pub use snake::{Snake, DEFAULT_SNAKE_HEALTH};
+pub use bot_a::BotA;
+pub use player::Player;
 
 use rand::{
     distributions::{Distribution, Standard},
