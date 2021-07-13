@@ -67,8 +67,8 @@ impl Player for BotA {
                     acc
                 });
 
-                dbg!(mcts.tree().root_state().board().matrice().array());
-                dbg!(&moves_eval);
+                // dbg!(mcts.tree().root_state().board().matrice().array());
+                // dbg!(&moves_eval);
 
                 let b: HashMap<Movement, f64> = moves_eval
                     .into_iter()
@@ -77,7 +77,7 @@ impl Player for BotA {
                     // (m, v.into_iter().min_by(|a,b| a.partial_cmp(b).unwrap()).unwrap()))
                     .collect();
 
-                dbg!(&b);
+                // dbg!(&b);
 
                 b.into_iter()
                     // .map(|(m, v)| (m, v.iter().sum::<f64>() / v.len() as f64))
@@ -92,7 +92,7 @@ impl Player for BotA {
             rand::random()
         });
 
-        dbg!(&best_move);
+        // dbg!(&best_move);
 
         best_move
     }
