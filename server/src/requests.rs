@@ -32,6 +32,6 @@ pub struct Snake {
     pub head: Point,
     pub length: u32,
     pub shout: String,
-    pub squad: String,
-    pub latency: i32,
+    pub squad: Option<String>,
+    pub latency: String,
 }

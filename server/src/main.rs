@@ -71,7 +71,7 @@ fn movement(req: Json<requests::Turn>) -> Json<responses::Move> {
 
     let latency_max = req.game.timeout as u64;
     // fixme: replace by avg latency
-    let latency = req.you.latency as u64;
+    let latency = req.you.latency.parse::<u64>().unwrap_or(50);
 
     let board = convert_board(&req.board);
     let mut game = engine::SnakeGame::new(board);
