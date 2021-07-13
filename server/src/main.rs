@@ -12,15 +12,13 @@ mod test;
 // External crates
 #[macro_use]
 extern crate rocket;
-extern crate rocket_contrib;
 
-use std::time::{Duration, Instant};
+use std::time::{Instant};
 
 use engine::Player;
 
 // Uses
-use rocket::http::Status;
-use rocket_contrib::json::Json;
+use rocket::{http::Status, serde::json::Json, tokio};
 
 fn convert_snake(s: &requests::Snake) -> engine::Snake {
     engine::Snake::new_from(s.health, s.body.clone(), s.length as usize, s.head)
@@ -57,7 +55,7 @@ fn start() -> Status {
 }
 
 #[post("/move", data = "<req>")]
-fn movement(req: Json<requests::Turn>) -> Json<responses::Move> {
+async fn movement(req: Json<requests::Turn>) -> Json<responses::Move> {
     let since_execution = Instant::now();
 
     let snake_id = req
@@ -90,7 +88,7 @@ fn movement(req: Json<requests::Turn>) -> Json<responses::Move> {
     let sleep_time = latency_max - (latency + since_execution.elapsed().as_millis() as u64 + 10) ;
 
     // fixme: that should be async + await, but who cares, 2h left lol
-    std::thread::sleep(Duration::from_millis(sleep_time));
+    tokio::time::sleep(tokio::time::Duration::from_millis(sleep_time)).await;
 
     let movement = responses::Move::new(bot.next_move());
 
@@ -102,10 +100,7 @@ fn end() -> Status {
     Status::Ok
 }
 
-fn rocket() -> rocket::Rocket {
-    rocket::ignite().mount("/", routes![index, start, movement, end])
-}
-
-fn main() {
-    rocket().launch();
+#[launch]
+fn rocket() -> _ {
+    rocket::build().mount("/", routes![index, start, movement, end])
 }
