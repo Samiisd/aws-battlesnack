@@ -1,4 +1,4 @@
-use crate::engine::Collision;
+use crate::engine::{Collision, DEFAULT_SNAKE_HEALTH};
 
 use super::matrice::CellValue;
 use super::{Movement, Snake, SnakeGame};
@@ -12,9 +12,7 @@ pub struct MyEvaluator;
 impl MyEvaluator {
     fn expand_conquer_array(mut array: Array2<CellValue>, snakes: &[Snake]) -> Array1<i64> {
         let (height, width) = (array.shape()[0] as i32, array.shape()[1] as i32);
-        // let mut lengths: Array1<i64> = snakes.iter().map(|s| s.body().len() as i64).collect();
         let mut lengths: Array1<i64> = snakes.iter().map(|s| s.body().len() as i64).collect();
-        // let mut lengths: Array1<i64> = Array1::zeros([snakes.len()]);
 
         let mut q = VecDeque::from_iter(snakes.iter().enumerate().map(|(id, s)| (id, *s.head())));
 
@@ -61,6 +59,21 @@ impl Evaluator<MyMCTS> for MyEvaluator {
 
         let array = state.board().matrice().array().clone();
 
+        let avg_len : i64 = (state.board()
+            .alive_snakes()
+            .map(|(_, s)| s.length() as f32)
+            .sum::<f32>() / state.board().nb_snakes_alive() as f32).round() as i64;
+
+        let p_diff_len_with_mean : Array1<i64> = snakes
+            .iter()
+            .map(|s| -(s.length() as i64 - avg_len).abs())
+            .collect();
+
+        let p_health : Array1<i64> = snakes
+            .iter()
+            .map(|s| (s.health() as i64  - (DEFAULT_SNAKE_HEALTH as f32 / 2.).ceil() as i64))
+            .collect();
+
         let p_area = Self::expand_conquer_array(array, snakes);
         let p_death: Array1<i64> = snakes
             .iter()
@@ -92,7 +105,7 @@ impl Evaluator<MyMCTS> for MyEvaluator {
                 p_collisions[id] += score;
             });
 
-        let p_total = p_area + p_collisions + p_death;
+        let p_total = p_area + p_collisions + p_death + p_health + p_diff_len_with_mean;
 
         (vec![(); moves.len()], p_total)
     }

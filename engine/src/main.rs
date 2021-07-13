@@ -113,7 +113,7 @@ fn render_players(board: &Board, players: &[Box<dyn Player>], t: math::Matrix2d,
 
 fn main() {
     let mut players: Vec<Box<dyn Player>> = vec![
-        Box::new(ui::BotA::new(1, color::hex("eeff11"))),
+        Box::new(ui::BotA::new(12, color::hex("eeff11"))),
         // Box::new(ui::BotA::new(1, color::hex("eeff11"))),
         // Box::new(ui::BotA::new(3, color::hex("00ff11"))),
         Box::new(ui::Human::new(
