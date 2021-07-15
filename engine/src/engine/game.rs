@@ -1,7 +1,7 @@
 use crate::engine::{Board, Movement};
-use itertools::*;
 use mcts::transposition_table::TranspositionHash;
 use mcts::GameState;
+use rand::{prelude::SliceRandom, thread_rng};
 use std::{
     collections::hash_map::DefaultHasher,
     hash::{Hash, Hasher},
@@ -40,7 +40,7 @@ impl SnakeGame {
                 Movement::Right,
             ]
             .iter()
-            .filter_map(|&m| -> Option<Movement> {
+            .filter_map(|&m| {
                 let new_position = head.apply_mov(m);
                 if self.board.is_outside(new_position) || matrice.get(new_position).is_some() {
                     None
@@ -52,7 +52,7 @@ impl SnakeGame {
         };
 
         if available_moves.is_empty() {
-            vec![Movement::Up]
+            vec![]
         } else {
             available_moves
         }
@@ -77,23 +77,31 @@ impl TranspositionHash for SnakeGame {
 
 impl GameState for SnakeGame {
     type Player = usize;
-    type Move = Vec<Movement>;
-    type MoveList = Vec<Vec<Movement>>;
+    type Move = Movement;
+    type MoveList = Vec<Movement>;
 
     fn current_player(&self) -> Self::Player {
         self.current_player
     }
 
     fn available_moves(&self) -> Self::MoveList {
-        let s = (0..self.board().snakes().len())
-            .map(|id| self.available_moves_snake(id))
-            .multi_cartesian_product()
-            .collect();
-
-        s
+        self.available_moves_snake(self.current_player)
     }
 
     fn make_move(&mut self, mov: &Self::Move) {
-        self.board.step(mov.clone(), true);
+        let sample = (0..self.board().snakes().len())
+            .map(|id| {
+                if id == self.current_player() {
+                    *mov
+                } else {
+                    *self
+                        .available_moves_snake(id)
+                        .choose(&mut thread_rng())
+                        .unwrap_or(&Movement::Up)
+                }
+            })
+            .collect();
+
+        self.board.step(sample, true);
     }
 }

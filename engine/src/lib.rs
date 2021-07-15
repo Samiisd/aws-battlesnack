@@ -2,4 +2,4 @@
 
 mod engine;
 
-pub use engine::{Board, Movement, Point, Snake, SnakeGame, BotA, Player};
+pub use engine::{Board, BotA, Movement, Player, Point, Snake, SnakeGame};

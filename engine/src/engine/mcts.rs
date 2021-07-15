@@ -4,7 +4,7 @@ use super::matrice::CellValue;
 use super::{Movement, Snake, SnakeGame};
 use mcts::{tree_policy::UCTPolicy, Evaluator, MCTS};
 use ndarray::{Array1, Array2};
-use std::{collections::VecDeque, iter::FromIterator};
+use std::collections::VecDeque;
 use std::{usize, vec};
 
 pub struct MyEvaluator;
@@ -14,7 +14,11 @@ impl MyEvaluator {
         let (height, width) = (array.shape()[0] as i32, array.shape()[1] as i32);
         let mut lengths: Array1<i64> = snakes.iter().map(|s| s.body().len() as i64).collect();
 
-        let mut q = VecDeque::from_iter(snakes.iter().enumerate().map(|(id, s)| (id, *s.head())));
+        let mut q : VecDeque<_> = snakes
+            .iter()
+            .enumerate()
+            .map(|(id, s)| (id, *s.head()))
+            .collect();
 
         while !q.is_empty() {
             let (id, pos) = q.pop_front().unwrap();
@@ -52,26 +56,29 @@ impl Evaluator<MyMCTS> for MyEvaluator {
     fn evaluate_new_state(
         &self,
         state: &SnakeGame,
-        moves: &Vec<Vec<Movement>>,
+        moves: &Vec<Movement>,
         _: Option<mcts::SearchHandle<MyMCTS>>,
     ) -> (Vec<()>, Self::StateEvaluation) {
         let snakes = state.board().snakes();
 
         let array = state.board().matrice().array().clone();
 
-        let avg_len : i64 = (state.board()
+        let avg_len: i64 = (state
+            .board()
             .alive_snakes()
             .map(|(_, s)| s.length() as f32)
-            .sum::<f32>() / state.board().nb_snakes_alive() as f32).round() as i64;
+            .sum::<f32>()
+            / state.board().nb_snakes_alive() as f32)
+            .round() as i64;
 
-        let p_diff_len_with_mean : Array1<i64> = snakes
+        let p_diff_len_with_mean: Array1<i64> = snakes
             .iter()
             .map(|s| -(s.length() as i64 - avg_len).abs())
             .collect();
 
-        let p_health : Array1<i64> = snakes
+        let p_health: Array1<i64> = snakes
             .iter()
-            .map(|s| (s.health() as i64  - (DEFAULT_SNAKE_HEALTH as f32 / 2.).ceil() as i64))
+            .map(|s| (s.health() as i64 - (DEFAULT_SNAKE_HEALTH as f32 / 2.).ceil() as i64))
             .collect();
 
         let p_area = Self::expand_conquer_array(array, snakes);

@@ -3,9 +3,9 @@ use ndarray::Array2;
 use rand::prelude::SliceRandom;
 
 use crate::engine::matrice::Matrice;
-use std::{collections::HashSet, iter::FromIterator};
 use std::hash::Hash;
 use std::vec;
+use std::collections::HashSet;
 
 use crate::engine::Movement;
 
@@ -57,7 +57,7 @@ impl Board {
             width,
             snakes,
             collisions: vec![],
-            food: HashSet::from_iter(food.iter().map(|p| *p)),
+            food: food.iter().copied().collect(),
             food_spawn_chance: 0.15,
         }
     }
